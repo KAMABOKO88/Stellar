@@ -19,65 +19,48 @@ tailwind.config = {
 }
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-<!-- Firebase SDK v9 (compat) -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
 <style>
   body { font-family: 'Inter', 'Hiragino Sans', sans-serif; }
-
-  /* スクロールバー */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: #f1f1f1; }
   ::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 3px; }
-
-  /* テーブル横スクロール */
   .table-wrap { overflow-x: auto; }
-
-  /* フェードイン */
   .fade-in { animation: fadeIn 0.3s ease; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-
-  /* ステータスバッジ */
-  .status-badge {
-    display: inline-block;
-    font-size: 11px; font-weight: 600;
-    padding: 2px 10px; border-radius: 100px;
-  }
+  .status-badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 100px; }
   .status-new      { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
   .status-contact  { background: #fefce8; color: #ca8a04; border: 1px solid #fde68a; }
   .status-entered  { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
-
-  /* セレクトボックス */
+  .scout-pending   { background: #fefce8; color: #ca8a04; border: 1px solid #fde68a; }
+  .scout-accepted  { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+  .scout-declined  { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
   select.status-select {
     font-size: 12px; padding: 3px 8px;
     border-radius: 6px; border: 1px solid #e5e7eb;
     background: white; cursor: pointer; outline: none;
   }
   select.status-select:focus { border-color: #8b5cf6; box-shadow: 0 0 0 2px rgba(139,92,246,0.15); }
-
-  /* カード */
-  .user-card { transition: box-shadow 0.2s; }
-  .user-card:hover { box-shadow: 0 4px 20px rgba(109,40,217,0.08); }
-
-  /* トースト */
-  #toast {
-    transition: opacity 0.3s, transform 0.3s;
-    pointer-events: none;
+  .tab-btn {
+    padding: 8px 20px; font-size: 13px; font-weight: 500;
+    border-radius: 8px; cursor: pointer; transition: all 0.2s;
+    color: #6b7280; background: transparent;
   }
+  .tab-btn.active {
+    background: white; color: #6d28d9;
+    box-shadow: 0 1px 6px rgba(109,40,217,0.12);
+  }
+  .tab-btn:hover:not(.active) { color: #6d28d9; }
+  #toast { transition: opacity 0.3s, transform 0.3s; pointer-events: none; }
 </style>
 </head>
 <body class="bg-surface min-h-screen text-gray-800">
 
-<!-- ══════════════════════════════════════
-     ログイン画面
-══════════════════════════════════════ -->
+<!-- ログイン画面 -->
 <div id="loginScreen" class="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-violet-50 to-purple-100">
   <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-8 fade-in">
-
-    <!-- ロゴ -->
     <div class="text-center mb-8">
       <div class="inline-flex items-center gap-2 mb-3">
         <div class="w-8 h-8 bg-brand rounded-lg flex items-center justify-center">
@@ -88,8 +71,6 @@ tailwind.config = {
       </div>
       <p class="text-sm text-gray-500">管理者ポータル</p>
     </div>
-
-    <!-- フォーム -->
     <div class="space-y-4">
       <div>
         <label class="block text-xs font-medium text-gray-600 mb-1.5">メールアドレス</label>
@@ -108,14 +89,11 @@ tailwind.config = {
         ログイン
       </button>
     </div>
-
     <p class="text-center text-xs text-gray-400 mt-6">Stellar 管理者専用 — 無断アクセス禁止</p>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     ダッシュボード
-══════════════════════════════════════ -->
+<!-- ダッシュボード -->
 <div id="dashboard" class="hidden min-h-screen flex flex-col">
 
   <!-- ヘッダー -->
@@ -141,144 +119,250 @@ tailwind.config = {
 
   <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6">
 
-    <!-- サマリーカード -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-      <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
-        <p class="text-xs text-gray-400 mb-1">総登録者</p>
-        <p class="text-2xl font-bold text-gray-800" id="statTotal">—</p>
-        <p class="text-xs text-gray-400 mt-1">名</p>
-      </div>
-      <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
-        <p class="text-xs text-gray-400 mb-1">未連絡</p>
-        <p class="text-2xl font-bold text-blue-600" id="statNew">—</p>
-        <p class="text-xs text-gray-400 mt-1">名</p>
-      </div>
-      <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
-        <p class="text-xs text-gray-400 mb-1">面接調整中</p>
-        <p class="text-2xl font-bold text-yellow-500" id="statContact">—</p>
-        <p class="text-xs text-gray-400 mt-1">名</p>
-      </div>
-      <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
-        <p class="text-xs text-gray-400 mb-1">入店済み</p>
-        <p class="text-2xl font-bold text-green-600" id="statEntered">—</p>
-        <p class="text-xs text-gray-400 mt-1">名</p>
-      </div>
-    </div>
-
-    <!-- フィルターバー -->
-    <div class="bg-white border border-gray-100 rounded-xl shadow-sm px-4 py-3 mb-4 flex flex-wrap gap-3 items-center">
-
-      <!-- 検索 -->
-      <div class="relative flex-1 min-w-[160px]">
-        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
-        </svg>
-        <input id="filterSearch" type="text" placeholder="ニックネームで検索"
-          class="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition"
-          oninput="applyFilters()">
-      </div>
-
-      <!-- 最低時給フィルター -->
-      <div class="flex items-center gap-2">
-        <label class="text-xs text-gray-500 whitespace-nowrap">最低時給</label>
-        <select id="filterWage" onchange="applyFilters()"
-          class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-violet-400 bg-white">
-          <option value="">すべて</option>
-          <option value="2000">¥2,000〜</option>
-          <option value="2500">¥2,500〜</option>
-          <option value="3000">¥3,000〜</option>
-          <option value="3500">¥3,500〜</option>
-          <option value="4000">¥4,000〜</option>
-        </select>
-      </div>
-
-      <!-- ステータスフィルター -->
-      <div class="flex items-center gap-2">
-        <label class="text-xs text-gray-500 whitespace-nowrap">ステータス</label>
-        <select id="filterStatus" onchange="applyFilters()"
-          class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-violet-400 bg-white">
-          <option value="">すべて</option>
-          <option value="new">未連絡</option>
-          <option value="contact">面接調整中</option>
-          <option value="entered">入店済み</option>
-        </select>
-      </div>
-
-      <!-- 経験フィルター -->
-      <div class="flex items-center gap-2">
-        <label class="text-xs text-gray-500 whitespace-nowrap">経験</label>
-        <select id="filterExp" onchange="applyFilters()"
-          class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-violet-400 bg-white">
-          <option value="">すべて</option>
-          <option value="未経験">未経験</option>
-          <option value="経験あり（1年未満）">経験あり（1年未満）</option>
-          <option value="経験あり（1年以上）">経験あり（1年以上）</option>
-        </select>
-      </div>
-
-      <!-- リセット -->
-      <button onclick="resetFilters()"
-        class="text-xs text-gray-400 hover:text-gray-600 underline whitespace-nowrap">
-        リセット
+    <!-- タブ切り替え -->
+    <div class="bg-gray-100 rounded-xl p-1 inline-flex gap-1 mb-6">
+      <button class="tab-btn active" onclick="switchTab('users')" id="tab-users">
+        👤 女の子管理
       </button>
-
-      <!-- 件数 -->
-      <span id="filterCount" class="ml-auto text-xs text-gray-400 whitespace-nowrap"></span>
+      <button class="tab-btn" onclick="switchTab('scouts')" id="tab-scouts">
+        📨 スカウト管理
+      </button>
     </div>
 
-    <!-- ローディング -->
-    <div id="loadingState" class="text-center py-20">
-      <div class="inline-block w-8 h-8 border-2 border-violet-200 border-t-brand rounded-full animate-spin mb-3"></div>
-      <p class="text-sm text-gray-400">データを読み込み中...</p>
-    </div>
-
-    <!-- エラー -->
-    <div id="errorState" class="hidden text-center py-20">
-      <p class="text-sm text-red-400">データの読み込みに失敗しました。</p>
-      <button onclick="loadUsers()" class="mt-3 text-xs text-brand underline">再試行</button>
-    </div>
-
-    <!-- 空 -->
-    <div id="emptyState" class="hidden text-center py-20">
-      <p class="text-sm text-gray-400">登録者がいません。</p>
-    </div>
-
-    <!-- ══ テーブル（デスクトップ） ══ -->
-    <div id="tableView" class="hidden fade-in">
-      <div class="bg-white rounded-xl border border-gray-100 shadow-sm table-wrap">
-        <table class="w-full text-sm min-w-[900px]">
-          <thead>
-            <tr class="border-b border-gray-100">
-              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">#</th>
-              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">ニックネーム</th>
-              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">年齢</th>
-              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">最低時給</th>
-              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">出勤</th>
-              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">送り</th>
-              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">経験</th>
-              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">ブロック店舗</th>
-              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">登録日</th>
-              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">ステータス</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody">
-          </tbody>
-        </table>
+    <!-- ══ 女の子管理タブ ══ -->
+    <div id="panel-users">
+      <!-- サマリーカード -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+          <p class="text-xs text-gray-400 mb-1">総登録者</p>
+          <p class="text-2xl font-bold text-gray-800" id="statTotal">—</p>
+          <p class="text-xs text-gray-400 mt-1">名</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+          <p class="text-xs text-gray-400 mb-1">未連絡</p>
+          <p class="text-2xl font-bold text-blue-600" id="statNew">—</p>
+          <p class="text-xs text-gray-400 mt-1">名</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+          <p class="text-xs text-gray-400 mb-1">面接調整中</p>
+          <p class="text-2xl font-bold text-yellow-500" id="statContact">—</p>
+          <p class="text-xs text-gray-400 mt-1">名</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+          <p class="text-xs text-gray-400 mb-1">入店済み</p>
+          <p class="text-2xl font-bold text-green-600" id="statEntered">—</p>
+          <p class="text-xs text-gray-400 mt-1">名</p>
+        </div>
       </div>
+
+      <!-- フィルターバー -->
+      <div class="bg-white border border-gray-100 rounded-xl shadow-sm px-4 py-3 mb-4 flex flex-wrap gap-3 items-center">
+        <div class="relative flex-1 min-w-[160px]">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
+          </svg>
+          <input id="filterSearch" type="text" placeholder="ニックネームで検索"
+            class="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition"
+            oninput="applyFilters()">
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-gray-500 whitespace-nowrap">最低時給</label>
+          <select id="filterWage" onchange="applyFilters()"
+            class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-violet-400 bg-white">
+            <option value="">すべて</option>
+            <option value="2000">¥2,000〜</option>
+            <option value="2500">¥2,500〜</option>
+            <option value="3000">¥3,000〜</option>
+            <option value="3500">¥3,500〜</option>
+            <option value="4000">¥4,000〜</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-gray-500 whitespace-nowrap">ステータス</label>
+          <select id="filterStatus" onchange="applyFilters()"
+            class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-violet-400 bg-white">
+            <option value="">すべて</option>
+            <option value="new">未連絡</option>
+            <option value="contact">面接調整中</option>
+            <option value="entered">入店済み</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-gray-500 whitespace-nowrap">経験</label>
+          <select id="filterExp" onchange="applyFilters()"
+            class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-violet-400 bg-white">
+            <option value="">すべて</option>
+            <option value="未経験">未経験</option>
+            <option value="経験あり（1年未満）">経験あり（1年未満）</option>
+            <option value="経験あり（1年以上）">経験あり（1年以上）</option>
+          </select>
+        </div>
+        <button onclick="resetFilters()" class="text-xs text-gray-400 hover:text-gray-600 underline whitespace-nowrap">リセット</button>
+        <span id="filterCount" class="ml-auto text-xs text-gray-400 whitespace-nowrap"></span>
+      </div>
+
+      <div id="loadingState" class="text-center py-20">
+        <div class="inline-block w-8 h-8 border-2 border-violet-200 border-t-brand rounded-full animate-spin mb-3"></div>
+        <p class="text-sm text-gray-400">データを読み込み中...</p>
+      </div>
+      <div id="errorState" class="hidden text-center py-20">
+        <p class="text-sm text-red-400">データの読み込みに失敗しました。</p>
+        <button onclick="loadUsers()" class="mt-3 text-xs text-brand underline">再試行</button>
+      </div>
+      <div id="emptyState" class="hidden text-center py-20">
+        <p class="text-sm text-gray-400">登録者がいません。</p>
+      </div>
+
+      <!-- テーブル（デスクトップ） -->
+      <div id="tableView" class="hidden fade-in">
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm table-wrap">
+          <table class="w-full text-sm min-w-[900px]">
+            <thead>
+              <tr class="border-b border-gray-100">
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">#</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">ニックネーム</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">年齢</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">最低時給</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">出勤</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">送り</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">経験</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">ブロック店舗</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">登録日</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">ステータス</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- カード（モバイル） -->
+      <div id="cardView" class="hidden fade-in space-y-3"></div>
     </div>
 
-    <!-- ══ カード（モバイル） ══ -->
-    <div id="cardView" class="hidden fade-in space-y-3"></div>
+    <!-- ══ スカウト管理タブ ══ -->
+    <div id="panel-scouts" class="hidden">
+
+      <!-- スカウトサマリーカード -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+          <p class="text-xs text-gray-400 mb-1">総スカウット数</p>
+          <p class="text-2xl font-bold text-gray-800" id="scoutTotal">—</p>
+          <p class="text-xs text-gray-400 mt-1">件</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+          <p class="text-xs text-gray-400 mb-1">今月送信</p>
+          <p class="text-2xl font-bold text-violet-600" id="scoutThisMonth">—</p>
+          <p class="text-xs text-gray-400 mt-1">件</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+          <p class="text-xs text-gray-400 mb-1">承諾率</p>
+          <p class="text-2xl font-bold text-green-600" id="scoutAcceptRate">—</p>
+          <p class="text-xs text-gray-400 mt-1">%</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+          <p class="text-xs text-gray-400 mb-1">辞退率</p>
+          <p class="text-2xl font-bold text-red-500" id="scoutDeclineRate">—</p>
+          <p class="text-xs text-gray-400 mt-1">%</p>
+        </div>
+      </div>
+
+      <!-- 店舗別集計 -->
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm mb-6 overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+          <h3 class="text-sm font-semibold text-gray-700">店舗別集計（今月）</h3>
+          <span class="text-xs text-gray-400">上限30通/月</span>
+        </div>
+        <div class="table-wrap">
+          <table class="w-full text-sm min-w-[500px]">
+            <thead>
+              <tr class="border-b border-gray-100">
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">店舗名</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">今月送信</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">承諾数</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">辞退数</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">保留中</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">残り枠</th>
+              </tr>
+            </thead>
+            <tbody id="shopSummaryBody">
+              <tr><td colspan="6" class="text-center py-8 text-sm text-gray-400">読み込み中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- スカウット一覧フィルター -->
+      <div class="bg-white border border-gray-100 rounded-xl shadow-sm px-4 py-3 mb-4 flex flex-wrap gap-3 items-center">
+        <div class="relative flex-1 min-w-[160px]">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
+          </svg>
+          <input id="scoutFilterSearch" type="text" placeholder="店舗名 / ニックネームで検索"
+            class="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition"
+            oninput="applyScoutFilters()">
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-gray-500 whitespace-nowrap">ステータス</label>
+          <select id="scoutFilterStatus" onchange="applyScoutFilters()"
+            class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-violet-400 bg-white">
+            <option value="">すべて</option>
+            <option value="pending">保留中</option>
+            <option value="accepted">承諾</option>
+            <option value="declined">辞退</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-gray-500 whitespace-nowrap">送信月</label>
+          <select id="scoutFilterMonth" onchange="applyScoutFilters()"
+            class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-violet-400 bg-white">
+            <option value="">すべて</option>
+          </select>
+        </div>
+        <button onclick="resetScoutFilters()" class="text-xs text-gray-400 hover:text-gray-600 underline whitespace-nowrap">リセット</button>
+        <span id="scoutFilterCount" class="ml-auto text-xs text-gray-400 whitespace-nowrap"></span>
+      </div>
+
+      <!-- スカウット一覧 -->
+      <div id="scoutLoadingState" class="text-center py-20">
+        <div class="inline-block w-8 h-8 border-2 border-violet-200 border-t-brand rounded-full animate-spin mb-3"></div>
+        <p class="text-sm text-gray-400">スカウットデータを読み込み中...</p>
+      </div>
+      <div id="scoutEmptyState" class="hidden text-center py-20">
+        <p class="text-sm text-gray-400">スカウットデータがありません。</p>
+      </div>
+
+      <div id="scoutTableView" class="hidden fade-in">
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm table-wrap">
+          <table class="w-full text-sm min-w-[900px]">
+            <thead>
+              <tr class="border-b border-gray-100">
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">#</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">店舗名</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">送り先</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">提示時給</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">送り</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">メッセージ</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">送信日時</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">ステータス</th>
+              </tr>
+            </thead>
+            <tbody id="scoutTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /panel-scouts -->
 
   </main>
 </div>
 
-<!-- トースト通知 -->
+<!-- トースト -->
 <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-4 py-2.5 rounded-lg shadow-lg opacity-0 translate-y-2 z-50">
   保存しました
 </div>
 
-<!-- 詳細モーダル -->
+<!-- 詳細モーダル（女の子） -->
 <div id="modal" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4" onclick="closeModal(event)">
   <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto" onclick="event.stopPropagation()">
     <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -291,7 +375,7 @@ tailwind.config = {
 
 <script>
 // ══════════════════════════════════
-// Firebase Config（ここを本番の値に差し替え）
+// Firebase Config
 // ══════════════════════════════════
 const firebaseConfig = {
   apiKey: "AIzaSyAZmmtI-BCneCuO6urLjBbh-5tph0KxcTM",
@@ -309,9 +393,12 @@ const db   = firebase.firestore();
 // ══════════════════════════════════
 // STATE
 // ══════════════════════════════════
-let allUsers    = [];   // 全データ
-let filtered    = [];   // フィルター後
-let statusCache = {};   // lineUserId → status（ローカルキャッシュ）
+let allUsers    = [];
+let filteredUsers = [];
+let statusCache = {};
+
+let allScouts    = [];
+let filteredScouts = [];
 
 // ══════════════════════════════════
 // AUTH
@@ -322,6 +409,7 @@ auth.onAuthStateChanged(user => {
     document.getElementById('dashboard').classList.remove('hidden');
     document.getElementById('adminEmail').textContent = user.email;
     loadUsers();
+    loadScouts();
   } else {
     document.getElementById('loginScreen').classList.remove('hidden');
     document.getElementById('dashboard').classList.add('hidden');
@@ -333,11 +421,9 @@ async function doLogin() {
   const pass  = document.getElementById('loginPassword').value;
   const errEl = document.getElementById('loginError');
   const btn   = document.getElementById('loginBtn');
-
   errEl.classList.add('hidden');
   btn.textContent = 'ログイン中...';
   btn.disabled = true;
-
   try {
     await auth.signInWithEmailAndPassword(email, pass);
   } catch (e) {
@@ -355,25 +441,28 @@ async function doLogout() {
 }
 
 // ══════════════════════════════════
-// DATA LOAD
+// TAB SWITCH
+// ══════════════════════════════════
+function switchTab(tab) {
+  ['users', 'scouts'].forEach(t => {
+    document.getElementById('panel-' + t).classList.toggle('hidden', t !== tab);
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+  });
+}
+
+// ══════════════════════════════════
+// ユーザーデータ読み込み
 // ══════════════════════════════════
 async function loadUsers() {
   show('loadingState');
   hide('tableView'); hide('cardView'); hide('emptyState'); hide('errorState');
-
   try {
     const snap = await db.collection('users').orderBy('registeredAt', 'desc').get();
     allUsers = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    // ローカルステータス初期化（Firestoreのstatusフィールドを優先）
-    allUsers.forEach(u => {
-      statusCache[u.id] = u.adminStatus || 'new';
-    });
-
+    allUsers.forEach(u => { statusCache[u.id] = u.adminStatus || 'new'; });
     hide('loadingState');
     applyFilters();
     updateStats();
-
   } catch (e) {
     console.error(e);
     hide('loadingState');
@@ -381,156 +470,97 @@ async function loadUsers() {
   }
 }
 
-// ══════════════════════════════════
-// FILTERS
-// ══════════════════════════════════
 function applyFilters() {
   const q      = document.getElementById('filterSearch').value.trim().toLowerCase();
   const wage   = parseInt(document.getElementById('filterWage').value) || 0;
   const status = document.getElementById('filterStatus').value;
   const exp    = document.getElementById('filterExp').value;
-
-  filtered = allUsers.filter(u => {
+  filteredUsers = allUsers.filter(u => {
     if (q && !(u.nickname || '').toLowerCase().includes(q)) return false;
     if (wage && (u.minWage || 0) < wage) return false;
     if (status && (statusCache[u.id] || 'new') !== status) return false;
     if (exp && u.exp !== exp) return false;
     return true;
   });
-
-  document.getElementById('filterCount').textContent = `${filtered.length} 件`;
+  document.getElementById('filterCount').textContent = `${filteredUsers.length} 件`;
   renderTable();
   renderCards();
 }
 
 function resetFilters() {
-  document.getElementById('filterSearch').value   = '';
-  document.getElementById('filterWage').value     = '';
-  document.getElementById('filterStatus').value   = '';
-  document.getElementById('filterExp').value      = '';
+  ['filterSearch','filterWage','filterStatus','filterExp'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
   applyFilters();
 }
 
-// ══════════════════════════════════
-// STATS
-// ══════════════════════════════════
 function updateStats() {
-  const total   = allUsers.length;
-  const newC    = allUsers.filter(u => (statusCache[u.id] || 'new') === 'new').length;
-  const contact = allUsers.filter(u => statusCache[u.id] === 'contact').length;
-  const entered = allUsers.filter(u => statusCache[u.id] === 'entered').length;
-
-  document.getElementById('statTotal').textContent   = total;
-  document.getElementById('statNew').textContent     = newC;
-  document.getElementById('statContact').textContent = contact;
-  document.getElementById('statEntered').textContent = entered;
+  document.getElementById('statTotal').textContent   = allUsers.length;
+  document.getElementById('statNew').textContent     = allUsers.filter(u => (statusCache[u.id]||'new') === 'new').length;
+  document.getElementById('statContact').textContent = allUsers.filter(u => statusCache[u.id] === 'contact').length;
+  document.getElementById('statEntered').textContent = allUsers.filter(u => statusCache[u.id] === 'entered').length;
 }
 
-// ══════════════════════════════════
-// RENDER TABLE（デスクトップ）
-// ══════════════════════════════════
 function renderTable() {
-  if (filtered.length === 0 && allUsers.length > 0) {
-    hide('tableView'); hide('cardView'); show('emptyState'); return;
-  }
-  if (filtered.length === 0) { return; }
-
+  if (filteredUsers.length === 0 && allUsers.length > 0) { hide('tableView'); hide('cardView'); show('emptyState'); return; }
+  if (filteredUsers.length === 0) return;
   hide('emptyState');
-
-  // デスクトップのみ表示
-  if (window.innerWidth >= 768) {
-    show('tableView'); hide('cardView');
-  } else {
-    hide('tableView'); show('cardView');
-  }
-
+  if (window.innerWidth >= 768) { show('tableView'); hide('cardView'); }
+  else { hide('tableView'); show('cardView'); }
   const tbody = document.getElementById('tableBody');
-  tbody.innerHTML = filtered.map((u, i) => {
-    const age     = calcAge(u.birth);
+  tbody.innerHTML = filteredUsers.map((u, i) => {
+    const age = calcAge(u.birth);
     const regDate = formatDate(u.registeredAt);
     const blocked = (u.blockedShopNames || []).join('、') || '—';
-    const status  = statusCache[u.id] || 'new';
-
+    const status = statusCache[u.id] || 'new';
     return `
     <tr class="border-b border-gray-50 hover:bg-violet-50/40 transition cursor-pointer" onclick="openModal('${u.id}')">
       <td class="px-4 py-3 text-gray-400 text-xs">${i + 1}</td>
-      <td class="px-4 py-3">
-        <div class="font-medium text-gray-800">${esc(u.nickname || '—')}</div>
-        <div class="text-xs text-gray-400">${u.lineDisplayName || ''}</div>
-      </td>
+      <td class="px-4 py-3"><div class="font-medium text-gray-800">${esc(u.nickname || '—')}</div><div class="text-xs text-gray-400">${u.lineDisplayName || ''}</div></td>
       <td class="px-4 py-3 text-gray-600">${age !== null ? age + '歳' : '—'}</td>
-      <td class="px-4 py-3 font-medium text-gray-800">
-        ${u.minWage ? '¥' + u.minWage.toLocaleString() + '〜' : '—'}
-      </td>
+      <td class="px-4 py-3 font-medium text-gray-800">${u.minWage ? '¥' + u.minWage.toLocaleString() + '〜' : '—'}</td>
       <td class="px-4 py-3 text-gray-600 text-xs">${esc(u.workDays || '—')}</td>
       <td class="px-4 py-3 text-gray-600 text-xs">${esc(u.send || '—')}</td>
       <td class="px-4 py-3 text-gray-600 text-xs">${esc(u.exp || '—')}</td>
       <td class="px-4 py-3 text-gray-500 text-xs max-w-[140px] truncate" title="${esc(blocked)}">${esc(blocked)}</td>
       <td class="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">${regDate}</td>
-      <td class="px-4 py-3" onclick="event.stopPropagation()">
-        ${statusSelect(u.id, status)}
-      </td>
+      <td class="px-4 py-3" onclick="event.stopPropagation()">${userStatusSelect(u.id, status)}</td>
     </tr>`;
   }).join('');
 }
 
-// ══════════════════════════════════
-// RENDER CARDS（モバイル）
-// ══════════════════════════════════
 function renderCards() {
   if (window.innerWidth >= 768) return;
-
   const container = document.getElementById('cardView');
-  container.innerHTML = filtered.map(u => {
-    const age    = calcAge(u.birth);
+  container.innerHTML = filteredUsers.map(u => {
+    const age = calcAge(u.birth);
     const status = statusCache[u.id] || 'new';
     const statusLabel = { new: '未連絡', contact: '面接調整中', entered: '入店済み' }[status];
     const statusCls   = { new: 'status-new', contact: 'status-contact', entered: 'status-entered' }[status];
     const blocked = (u.blockedShopNames || []).join('、') || '—';
-
     return `
-    <div class="user-card bg-white rounded-xl border border-gray-100 shadow-sm p-4 cursor-pointer" onclick="openModal('${u.id}')">
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 cursor-pointer" onclick="openModal('${u.id}')">
       <div class="flex items-start justify-between mb-3">
-        <div>
-          <div class="font-semibold text-gray-800">${esc(u.nickname || '—')}</div>
-          <div class="text-xs text-gray-400">${age !== null ? age + '歳' : '年齢不明'}</div>
-        </div>
+        <div><div class="font-semibold text-gray-800">${esc(u.nickname || '—')}</div><div class="text-xs text-gray-400">${age !== null ? age + '歳' : '年齢不明'}</div></div>
         <span class="status-badge ${statusCls}">${statusLabel}</span>
       </div>
-      <div class="grid grid-cols-2 gap-2 text-xs mb-3">
-        <div><span class="text-gray-400">最低時給</span><br><span class="font-medium text-gray-700">${u.minWage ? '¥'+u.minWage.toLocaleString()+'〜' : '—'}</span></div>
-        <div><span class="text-gray-400">出勤日数</span><br><span class="font-medium text-gray-700">${esc(u.workDays||'—')}</span></div>
-        <div><span class="text-gray-400">送り</span><br><span class="font-medium text-gray-700">${esc(u.send||'—')}</span></div>
-        <div><span class="text-gray-400">経験</span><br><span class="font-medium text-gray-700">${esc(u.exp||'—')}</span></div>
-      </div>
-      ${blocked !== '—' ? `<div class="text-xs text-red-400 bg-red-50 rounded px-2 py-1 mb-3">🛡 ブロック: ${esc(blocked)}</div>` : ''}
-      <div onclick="event.stopPropagation()" class="flex items-center gap-2">
-        <span class="text-xs text-gray-400">ステータス変更:</span>
-        ${statusSelect(u.id, status)}
+      <div onclick="event.stopPropagation()" class="flex items-center gap-2 mt-2">
+        <span class="text-xs text-gray-400">ステータス変更:</span>${userStatusSelect(u.id, status)}
       </div>
     </div>`;
   }).join('');
 }
 
-// ステータスセレクトボックス
-function statusSelect(userId, current) {
-  const opts = [
-    { val: 'new',     label: '未連絡' },
-    { val: 'contact', label: '面接調整中' },
-    { val: 'entered', label: '入店済み' },
-  ];
-  return `<select class="status-select" onchange="updateStatus('${userId}', this.value)">
+function userStatusSelect(userId, current) {
+  const opts = [{ val: 'new', label: '未連絡' }, { val: 'contact', label: '面接調整中' }, { val: 'entered', label: '入店済み' }];
+  return `<select class="status-select" onchange="updateUserStatus('${userId}', this.value)">
     ${opts.map(o => `<option value="${o.val}" ${current===o.val?'selected':''}>${o.label}</option>`).join('')}
   </select>`;
 }
 
-// ══════════════════════════════════
-// ステータス更新
-// ══════════════════════════════════
-async function updateStatus(userId, newStatus) {
+async function updateUserStatus(userId, newStatus) {
   statusCache[userId] = newStatus;
   updateStats();
-
   try {
     await db.collection('users').doc(userId).update({
       adminStatus: newStatus,
@@ -538,30 +568,206 @@ async function updateStatus(userId, newStatus) {
     });
     showToast('ステータスを保存しました');
   } catch (e) {
-    console.error('ステータス保存失敗:', e);
-    showToast('⚠️ 保存に失敗しました（オフライン？）');
+    showToast('⚠️ 保存に失敗しました');
   }
 }
 
 // ══════════════════════════════════
-// 詳細モーダル
+// スカウトデータ読み込み
+// ══════════════════════════════════
+async function loadScouts() {
+  try {
+    const snap = await db.collection('scouts').orderBy('sentAt', 'desc').get();
+    allScouts = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    buildMonthFilter();
+    applyScoutFilters();
+    renderShopSummary();
+    updateScoutStats();
+    hide('scoutLoadingState');
+  } catch (e) {
+    console.error('スカウト読み込みエラー:', e);
+    hide('scoutLoadingState');
+    document.getElementById('scoutLoadingState').innerHTML = '<p class="text-sm text-red-400">スカウットデータの読み込みに失敗しました。</p>';
+  }
+}
+
+function buildMonthFilter() {
+  const months = new Set();
+  allScouts.forEach(s => {
+    if (s.sentAt) {
+      const d = s.sentAt.toDate ? s.sentAt.toDate() : new Date(s.sentAt);
+      months.add(d.getFullYear() + '/' + String(d.getMonth()+1).padStart(2,'0'));
+    }
+  });
+  const sel = document.getElementById('scoutFilterMonth');
+  [...months].sort().reverse().forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m; opt.textContent = m;
+    sel.appendChild(opt);
+  });
+}
+
+function applyScoutFilters() {
+  const q      = document.getElementById('scoutFilterSearch').value.trim().toLowerCase();
+  const status = document.getElementById('scoutFilterStatus').value;
+  const month  = document.getElementById('scoutFilterMonth').value;
+
+  filteredScouts = allScouts.filter(s => {
+    if (q && !(s.shopName||'').toLowerCase().includes(q) && !(s.targetNickname||'').toLowerCase().includes(q)) return false;
+    if (status && s.status !== status) return false;
+    if (month) {
+      if (!s.sentAt) return false;
+      const d = s.sentAt.toDate ? s.sentAt.toDate() : new Date(s.sentAt);
+      const m = d.getFullYear() + '/' + String(d.getMonth()+1).padStart(2,'0');
+      if (m !== month) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('scoutFilterCount').textContent = `${filteredScouts.length} 件`;
+  renderScoutTable();
+}
+
+function resetScoutFilters() {
+  ['scoutFilterSearch','scoutFilterStatus','scoutFilterMonth'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  applyScoutFilters();
+}
+
+function updateScoutStats() {
+  const total = allScouts.length;
+  const now = new Date();
+  const thisMonth = allScouts.filter(s => {
+    if (!s.sentAt) return false;
+    const d = s.sentAt.toDate ? s.sentAt.toDate() : new Date(s.sentAt);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).length;
+  const accepted = allScouts.filter(s => s.status === 'accepted').length;
+  const declined = allScouts.filter(s => s.status === 'declined').length;
+  const resolved = accepted + declined;
+
+  document.getElementById('scoutTotal').textContent = total;
+  document.getElementById('scoutThisMonth').textContent = thisMonth;
+  document.getElementById('scoutAcceptRate').textContent = resolved > 0 ? Math.round(accepted/resolved*100) : '—';
+  document.getElementById('scoutDeclineRate').textContent = resolved > 0 ? Math.round(declined/resolved*100) : '—';
+}
+
+function renderShopSummary() {
+  const now = new Date();
+  const shopMap = {};
+
+  allScouts.forEach(s => {
+    if (!s.shopName) return;
+    if (!shopMap[s.shopName]) shopMap[s.shopName] = { total: 0, accepted: 0, declined: 0, pending: 0, thisMonth: 0 };
+    const shop = shopMap[s.shopName];
+    shop.total++;
+    if (s.status === 'accepted') shop.accepted++;
+    else if (s.status === 'declined') shop.declined++;
+    else shop.pending++;
+    if (s.sentAt) {
+      const d = s.sentAt.toDate ? s.sentAt.toDate() : new Date(s.sentAt);
+      if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) shop.thisMonth++;
+    }
+  });
+
+  const LIMIT = 30;
+  const tbody = document.getElementById('shopSummaryBody');
+  const shops = Object.entries(shopMap).sort((a,b) => b[1].thisMonth - a[1].thisMonth);
+
+  if (shops.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-sm text-gray-400">データなし</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = shops.map(([name, d]) => {
+    const remaining = LIMIT - d.thisMonth;
+    const remainCls = remaining <= 5 ? 'text-red-500 font-bold' : remaining <= 10 ? 'text-yellow-500 font-semibold' : 'text-green-600';
+    return `<tr class="border-b border-gray-50 hover:bg-gray-50/50">
+      <td class="px-4 py-3 font-medium text-gray-800">${esc(name)}</td>
+      <td class="px-4 py-3 text-gray-700 font-semibold">${d.thisMonth}件</td>
+      <td class="px-4 py-3 text-green-600 font-medium">${d.accepted}件</td>
+      <td class="px-4 py-3 text-red-500">${d.declined}件</td>
+      <td class="px-4 py-3 text-yellow-600">${d.pending}件</td>
+      <td class="px-4 py-3 ${remainCls}">${remaining}枠</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderScoutTable() {
+  if (filteredScouts.length === 0) { hide('scoutTableView'); show('scoutEmptyState'); return; }
+  hide('scoutEmptyState'); show('scoutTableView');
+
+  const tbody = document.getElementById('scoutTableBody');
+  tbody.innerHTML = filteredScouts.map((s, i) => {
+    const sentDate = formatDate(s.sentAt);
+    const statusInfo = {
+      pending:  { cls: 'scout-pending',  label: '保留中' },
+      accepted: { cls: 'scout-accepted', label: '承諾' },
+      declined: { cls: 'scout-declined', label: '辞退' },
+    };
+    const si = statusInfo[s.status] || statusInfo['pending'];
+    const msg = (s.message || '').length > 20 ? esc(s.message.slice(0,20)) + '…' : esc(s.message || '—');
+
+    return `<tr class="border-b border-gray-50 hover:bg-violet-50/30 transition">
+      <td class="px-4 py-3 text-gray-400 text-xs">${i + 1}</td>
+      <td class="px-4 py-3"><div class="font-medium text-gray-800">${esc(s.shopName || '—')}</div><div class="text-xs text-gray-400">${esc(s.shopEmail || '')}</div></td>
+      <td class="px-4 py-3 font-medium text-gray-700">${esc(s.targetNickname || '—')}</td>
+      <td class="px-4 py-3 font-semibold text-gray-800">${s.offerHourly ? '¥'+s.offerHourly.toLocaleString() : '—'}</td>
+      <td class="px-4 py-3 text-gray-600 text-xs">${esc(s.transport || '—')}</td>
+      <td class="px-4 py-3 text-gray-500 text-xs max-w-[120px]" title="${esc(s.message||'')}">${msg}</td>
+      <td class="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">${sentDate}</td>
+      <td class="px-4 py-3">${scoutStatusSelect(s.id, s.status || 'pending')}</td>
+    </tr>`;
+  }).join('');
+}
+
+function scoutStatusSelect(scoutId, current) {
+  const opts = [
+    { val: 'pending',  label: '保留中' },
+    { val: 'accepted', label: '承諾' },
+    { val: 'declined', label: '辞退' },
+  ];
+  return `<select class="status-select" onchange="updateScoutStatus('${scoutId}', this.value)">
+    ${opts.map(o => `<option value="${o.val}" ${current===o.val?'selected':''}>${o.label}</option>`).join('')}
+  </select>`;
+}
+
+async function updateScoutStatus(scoutId, newStatus) {
+  // ローカル更新
+  const scout = allScouts.find(s => s.id === scoutId);
+  if (scout) scout.status = newStatus;
+  updateScoutStats();
+  renderShopSummary();
+
+  try {
+    await db.collection('scouts').doc(scoutId).update({
+      status: newStatus,
+      adminUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast('ステータスを更新しました');
+  } catch (e) {
+    console.error(e);
+    showToast('⚠️ 保存に失敗しました');
+  }
+}
+
+// ══════════════════════════════════
+// 詳細モーダル（女の子）
 // ══════════════════════════════════
 function openModal(userId) {
   const u = allUsers.find(x => x.id === userId);
   if (!u) return;
-
-  const age     = calcAge(u.birth);
+  const age = calcAge(u.birth);
   const regDate = formatDate(u.registeredAt);
   const blocked = (u.blockedShopNames || []);
-  const aura    = (u.aura || []).join('、') || '—';
-  const jobTypes= (u.jobTypes || []).join('、') || '—';
-
+  const aura = (u.aura || []).join('、') || '—';
+  const jobTypes = (u.jobTypes || []).join('、') || '—';
   const row = (label, value) => `
     <div class="flex gap-3 py-2 border-b border-gray-50 last:border-0">
       <span class="text-xs text-gray-400 w-28 flex-shrink-0 pt-0.5">${label}</span>
       <span class="text-sm text-gray-700 font-medium">${value}</span>
     </div>`;
-
   document.getElementById('modalContent').innerHTML = `
     ${row('LINE表示名', esc(u.lineDisplayName || '—'))}
     ${row('ニックネーム', esc(u.nickname || '—'))}
@@ -579,9 +785,7 @@ function openModal(userId) {
     <div class="pt-3">
       <p class="text-xs text-gray-400 mb-2">LINE ID（内部管理用）</p>
       <code class="text-xs bg-gray-50 border border-gray-100 rounded px-3 py-2 block text-gray-500 break-all">${esc(u.lineUserId || u.id)}</code>
-    </div>
-  `;
-
+    </div>`;
   document.getElementById('modal').classList.remove('hidden');
 }
 
@@ -607,9 +811,7 @@ function formatDate(ts) {
   if (!ts) return '—';
   try {
     const d = ts.toDate ? ts.toDate() : new Date(ts);
-    return d.getFullYear() + '/' +
-      String(d.getMonth()+1).padStart(2,'0') + '/' +
-      String(d.getDate()).padStart(2,'0');
+    return d.getFullYear() + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + String(d.getDate()).padStart(2,'0');
   } catch { return '—'; }
 }
 
@@ -633,9 +835,8 @@ function showToast(msg) {
   }, 2500);
 }
 
-// レスポンシブ対応：リサイズ時に表示切替
 window.addEventListener('resize', () => {
-  if (filtered.length === 0) return;
+  if (filteredUsers.length === 0) return;
   if (window.innerWidth >= 768) { show('tableView'); hide('cardView'); }
   else { hide('tableView'); show('cardView'); renderCards(); }
 });
