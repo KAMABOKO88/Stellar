@@ -539,14 +539,37 @@ function initPetals(){
 
 async function initLiff(){
   initPetals();
+  // liff.line.me経由かどうか判定
+  const isLiffUrl = window.location.href.includes('liff.line.me') || 
+                    window.location.search.includes('liff.state') ||
+                    window.location.hash.includes('liff.state') ||
+                    document.referrer.includes('line');
   try{
     await liff.init({liffId:CONFIG.liffId});
-    if(!liff.isInClient()&&!liff.isLoggedIn()){startDemoMode();return;}
-    if(!liff.isLoggedIn()){liff.login({redirectUri:window.location.href});return;}
+    // 未ログインの場合
+    if(!liff.isLoggedIn()){
+      // LINEアプリ内 or liff.line.me経由ならログインへ
+      if(liff.isInClient() || isLiffUrl){
+        liff.login({redirectUri:window.location.href});
+        return;
+      }
+      // 通常ブラウザからのアクセスはデモモード
+      startDemoMode();
+      return;
+    }
     const p=await liff.getProfile();state.lineUserId=p.userId;state.lineDisplayName=p.displayName;
     if(db){const d=await db.collection("users").doc(state.lineUserId).get();if(d.exists){showAlreadyRegistered();return;}}
     initUI();document.getElementById("loading").style.display="none";goStep(1);
-  }catch(e){console.error("LIFF error",e);startDemoMode();}
+  }catch(e){
+    console.error("LIFF error",e);
+    // LINEアプリ内のエラーはエラー表示
+    if(typeof liff !== "undefined" && liff.isInClient()){
+      document.getElementById("loadingSpinner") && (document.getElementById("loadingSpinner").style.display="none");
+      document.getElementById("loadingError").style.display="block";
+      return;
+    }
+    startDemoMode();
+  }
 }
 
 function startDemoMode(){
