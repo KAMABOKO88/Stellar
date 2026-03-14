@@ -539,35 +539,43 @@ function initPetals(){
 
 async function initLiff(){
   initPetals();
-  // liff.line.me経由かどうか判定
-  const isLiffUrl = window.location.href.includes('liff.line.me') || 
-                    window.location.search.includes('liff.state') ||
-                    window.location.hash.includes('liff.state') ||
-                    document.referrer.includes('line');
   try{
     await liff.init({liffId:CONFIG.liffId});
-    // 未ログインの場合
-    if(!liff.isLoggedIn()){
-      // LINEアプリ内 or liff.line.me経由ならログインへ
-      if(liff.isInClient() || isLiffUrl){
-        liff.login({redirectUri:window.location.href});
-        return;
-      }
-      // 通常ブラウザからのアクセスはデモモード
+
+    // LINEアプリ外・未ログイン → デモモード
+    if(!liff.isInClient() && !liff.isLoggedIn()){
       startDemoMode();
       return;
     }
-    const p=await liff.getProfile();state.lineUserId=p.userId;state.lineDisplayName=p.displayName;
-    if(db){const d=await db.collection("users").doc(state.lineUserId).get();if(d.exists){showAlreadyRegistered();return;}}
-    initUI();document.getElementById("loading").style.display="none";goStep(1);
-  }catch(e){
-    console.error("LIFF error",e);
-    // LINEアプリ内のエラーはエラー表示
-    if(typeof liff !== "undefined" && liff.isInClient()){
-      document.getElementById("loadingSpinner") && (document.getElementById("loadingSpinner").style.display="none");
-      document.getElementById("loadingError").style.display="block";
+    // 未ログイン → LINEログインへリダイレクト
+    if(!liff.isLoggedIn()){
+      liff.login({redirectUri:window.location.href});
       return;
     }
+    // ログイン済み → プロフィール取得
+    const p=await liff.getProfile();
+    state.lineUserId=p.userId;
+    state.lineDisplayName=p.displayName;
+    if(db){
+      try{
+        const d=await db.collection("users").doc(state.lineUserId).get();
+        if(d.exists){showAlreadyRegistered();return;}
+      }catch(dbErr){
+        console.warn("Firestore check error:",dbErr);
+        // DB確認失敗しても登録フローは続行
+      }
+    }
+    initUI();
+    document.getElementById("loading").style.display="none";
+    goStep(1);
+  }catch(e){
+    console.error("LIFF init error:",e.message||e);
+    // LINEアプリ内でエラー → エラーメッセージ＋再読み込みボタン
+    if(typeof liff !== "undefined" && liff.isInClient && liff.isInClient()){
+      showLiffError("LINEアプリ内での読み込みに失敗しました。<br>画面を閉じてもう一度お試しください。<br><small style='opacity:.6'>Error: "+( e.message||"unknown")+"</small>");
+      return;
+    }
+    // 通常ブラウザはデモモード
     startDemoMode();
   }
 }
@@ -584,6 +592,11 @@ function startDemoMode(){
 function showAlreadyRegistered(){
   document.getElementById("loading").style.display="none";
   document.body.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:40px;text-align:center;background:#fff5f7;font-family:'Zen Maru Gothic',sans-serif;"><div><div style="font-size:56px;margin-bottom:14px">🌸</div><div style="font-family:'Shippori Mincho',serif;font-size:20px;font-weight:600;color:#2d1820;margin-bottom:8px">登録済みです</div><div style="font-size:13px;color:#5c3040;font-weight:500">プロフィールはLINEメニューから確認できます</div></div></div>`;
+}
+
+function showLiffError(msg){
+  document.getElementById("loading").style.display="none";
+  document.body.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:40px;text-align:center;background:#fff5f7;font-family:'Zen Maru Gothic',sans-serif;"><div><div style="font-size:48px;margin-bottom:14px">⚠️</div><div style="font-size:16px;font-weight:700;color:#2d1820;margin-bottom:12px">読み込みエラー</div><div style="font-size:13px;color:#5c3040;margin-bottom:20px;line-height:1.8">${msg}</div><button onclick="location.reload()" style="background:#e8829a;color:#fff;border:none;border-radius:12px;padding:14px 32px;font-size:15px;font-weight:700;cursor:pointer">再読み込み</button></div></div>`;
 }
 
 function initUI(){
