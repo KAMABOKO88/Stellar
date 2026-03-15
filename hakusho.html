@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>高松ナイトワーク桜華白書 2026 | Stellar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;700&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #faf8f5;
+  --white:    #ffffff;
+  --sakura:   #e8829a;
+  --sakura-l: #f9c4d4;
+  --sakura-d: #c05878;
+  --gold:     #b89240;
+  --gold-bg:  rgba(184,146,64,0.09);
+  --gold-bdr: rgba(184,146,64,0.28);
+  --t0: #1a0e0e;
+  --t1: #2d1a1a;
+  --t2: #5c3838;
+  --t3: #8a6868;
+  --bdr: rgba(224,160,176,0.2);
+  --sh-s: 0 2px 12px rgba(180,60,80,0.07);
+  --sh-m: 0 6px 28px rgba(180,60,80,0.10);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased;color-scheme:light only}
+body{
+  background:#faf8f5 !important;color:#1a0e0e !important;
+  font-family:"Zen Maru Gothic",sans-serif;
+  font-size:15px;font-weight:400;line-height:1.85;
+  overflow-x:hidden;color-scheme:light only;
+}
+@media(prefers-color-scheme:dark){
+  html,body{background:#faf8f5 !important;color:#1a0e0e !important}
+  .card,.data-card,.acc-body,.tip-box,.warn-box,.info-box{background:#ffffff !important}
+}
+body::before{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 60% 40% at 0% 0%,rgba(249,196,212,0.22) 0%,transparent 50%),
+    radial-gradient(ellipse 50% 35% at 100% 100%,rgba(253,221,230,0.18) 0%,transparent 50%);
+}
+body::after{
+  content:"";position:fixed;top:0;left:0;right:0;height:3px;z-index:200;
+  background:linear-gradient(90deg,var(--sakura-l),var(--sakura),var(--sakura-d),var(--gold));
+}
+
+/* NAV */
+nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(250,248,245,0.93);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--bdr);
+  padding:12px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.nav-logo{
+  font-family:"Shippori Mincho",serif;
+  font-size:16px;font-weight:700;letter-spacing:0.12em;color:var(--sakura-d);
+}
+.nav-cta{
+  font-size:11px;font-weight:700;letter-spacing:0.08em;color:#fff;
+  background:linear-gradient(135deg,var(--sakura),var(--sakura-d));
+  padding:7px 16px;border-radius:100px;text-decoration:none;
+  box-shadow:0 3px 12px rgba(200,88,120,0.28);
+}
+
+/* WRAP */
+.wrap{max-width:680px;margin:0 auto;padding:0 20px;position:relative;z-index:1}
+
+/* ヘッダー */
+.doc-header{padding:48px 0 36px;border-bottom:1px solid var(--bdr);text-align:center}
+.doc-tag{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:10px;letter-spacing:0.2em;font-weight:700;color:var(--sakura-d);
+  background:rgba(224,96,122,0.09);border:1px solid rgba(224,96,122,0.22);
+  padding:5px 16px;border-radius:100px;margin-bottom:20px;
+}
+.doc-title{
+  font-family:"Shippori Mincho",serif;
+  font-size:clamp(26px,6vw,38px);font-weight:700;
+  line-height:1.25;color:var(--t0);margin-bottom:10px;
+}
+.doc-title em{font-style:normal;color:var(--sakura-d)}
+.doc-sub{font-size:13px;color:var(--t3);margin-bottom:18px}
+.doc-meta{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.meta-chip{
+  font-size:11px;color:var(--t2);
+  background:var(--white);border:1px solid var(--bdr);
+  border-radius:8px;padding:4px 12px;
+}
+
+/* DATA HIGHLIGHTS — 最上部の大きい数字 */
+.highlights{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+  margin:32px 0;
+}
+@media(max-width:420px){.highlights{grid-template-columns:1fr 1fr}}
+.hl-card{
+  background:var(--white);border:1px solid var(--bdr);
+  border-radius:16px;padding:18px 14px;text-align:center;
+  box-shadow:var(--sh-s);position:relative;overflow:hidden;
+}
+.hl-card::before{
+  content:"";position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--sakura-l),transparent);
+}
+.hl-val{
+  font-family:"Shippori Mincho",serif;
+  font-size:clamp(22px,5vw,30px);font-weight:700;
+  color:var(--sakura-d);line-height:1;margin-bottom:6px;
+}
+.hl-label{font-size:10px;color:var(--t3);letter-spacing:0.08em;line-height:1.5}
+
+/* セクション */
+.section{padding:40px 0 28px;border-bottom:1px solid var(--bdr)}
+.section:last-of-type{border-bottom:none}
+.sec-num{
+  font-size:10px;letter-spacing:0.22em;font-weight:700;color:var(--sakura);
+  display:flex;align-items:center;gap:8px;margin-bottom:8px;
+}
+.sec-num::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--sakura-l),transparent)}
+.sec-title{
+  font-family:"Shippori Mincho",serif;
+  font-size:clamp(19px,5vw,26px);font-weight:700;color:var(--t0);
+  line-height:1.3;margin-bottom:16px;
+}
+
+/* VISUAL COMPARE — 図解的な比較 */
+.compare-visual{
+  background:var(--white);border:1px solid var(--bdr);
+  border-radius:16px;padding:22px 20px;margin:16px 0;box-shadow:var(--sh-s);
+}
+.compare-label{font-size:11px;font-weight:700;color:var(--t3);margin-bottom:14px;letter-spacing:0.08em}
+.bar-row{display:flex;flex-direction:column;gap:12px}
+.bar-item{display:flex;flex-direction:column;gap:4px}
+.bar-meta{display:flex;justify-content:space-between;align-items:baseline}
+.bar-name{font-size:13px;font-weight:700;color:var(--t0)}
+.bar-num{font-size:12px;font-weight:700;color:var(--sakura-d)}
+.bar-track{height:10px;background:rgba(224,160,176,0.18);border-radius:100px;overflow:hidden}
+.bar-fill{height:100%;border-radius:100px;transition:width 1s ease}
+.bar-fill.high{background:linear-gradient(90deg,var(--sakura-l),var(--sakura))}
+.bar-fill.mid{background:linear-gradient(90deg,rgba(249,196,212,0.6),var(--sakura-l))}
+.bar-fill.low{background:rgba(224,160,176,0.4)}
+
+/* GENRE TABLE */
+.genre-grid{display:flex;flex-direction:column;gap:8px;margin:16px 0}
+.genre-row{
+  background:var(--white);border:1px solid var(--bdr);
+  border-radius:12px;padding:14px 16px;
+  display:flex;align-items:center;gap:12px;box-shadow:var(--sh-s);
+}
+.genre-icon{font-size:22px;flex-shrink:0;width:36px;text-align:center}
+.genre-name{font-size:14px;font-weight:700;color:var(--t0);flex:1}
+.genre-range{font-size:13px;color:var(--sakura-d);font-weight:700;white-space:nowrap}
+.genre-tag{
+  font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;
+  white-space:nowrap;
+}
+.tag-g{color:#2e7d5a;background:rgba(46,125,90,0.10);border:1px solid rgba(46,125,90,0.22)}
+.tag-y{color:#b06020;background:rgba(176,96,32,0.10);border:1px solid rgba(176,96,32,0.22)}
+.tag-p{color:var(--sakura-d);background:rgba(224,96,122,0.09);border:1px solid rgba(224,96,122,0.22)}
+
+/* アコーディオン */
+.acc-list{display:flex;flex-direction:column;gap:8px;margin:16px 0}
+.acc-item{
+  background:var(--white);border:1px solid var(--bdr);
+  border-radius:14px;overflow:hidden;box-shadow:var(--sh-s);
+}
+.acc-q{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:16px 18px;cursor:pointer;transition:background 0.18s;
+}
+.acc-q:active{background:rgba(249,196,212,0.1)}
+.acc-icon{
+  width:26px;height:26px;border-radius:8px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;margin-top:1px;
+}
+.acc-icon.ok{background:rgba(46,125,90,0.12);color:#2e7d5a}
+.acc-icon.ng{background:rgba(176,96,32,0.12);color:#b06020}
+.acc-icon.tip{background:var(--gold-bg);color:var(--gold)}
+.acc-q-text{font-size:14px;font-weight:700;color:var(--t0);line-height:1.4;flex:1}
+.acc-arrow{font-size:11px;color:var(--t3);flex-shrink:0;margin-top:4px;transition:transform 0.3s}
+.acc-item.open .acc-arrow{transform:rotate(180deg)}
+.acc-body{
+  display:none;padding:0 18px 16px 56px;
+  font-size:13px;color:var(--t2);line-height:1.85;
+  border-top:1px solid var(--bdr);padding-top:14px;
+}
+.acc-item.open .acc-body{display:block}
+
+/* チェックリスト（シンプル版） */
+.check-list{list-style:none;display:flex;flex-direction:column;gap:9px;margin:14px 0}
+.check-list li{
+  display:flex;align-items:flex-start;gap:9px;
+  font-size:13px;color:var(--t1);line-height:1.6;
+}
+.ci-ok::before{content:"✅";flex-shrink:0}
+.ci-ng::before{content:"🚩";flex-shrink:0}
+.ci-tip::before{content:"💡";flex-shrink:0}
+
+/* ボックス */
+.warn-box{
+  background:rgba(176,96,32,0.07);border:1px solid rgba(176,96,32,0.22);
+  border-radius:12px;padding:14px 16px;margin:14px 0;
+  font-size:13px;color:#7a4010;line-height:1.8;
+}
+.tip-box{
+  background:var(--gold-bg);border:1px solid var(--gold-bdr);
+  border-radius:12px;padding:14px 16px;margin:14px 0;
+  font-size:13px;color:#7a6010;line-height:1.8;
+}
+.info-box{
+  background:rgba(44,88,160,0.07);border:1px solid rgba(44,88,160,0.18);
+  border-radius:12px;padding:14px 16px;margin:14px 0;
+  font-size:13px;color:#1e3870;line-height:1.8;
+}
+.card{
+  background:var(--white);border:1px solid var(--bdr);
+  border-radius:14px;padding:20px;margin:14px 0;box-shadow:var(--sh-s);
+}
+.card-title{font-size:14px;font-weight:700;color:var(--t0);margin-bottom:10px}
+
+/* 5つの質問 */
+.q-list{list-style:none;display:flex;flex-direction:column;gap:10px}
+.q-list li{
+  display:flex;align-items:flex-start;gap:10px;
+  font-size:13px;color:var(--t1);line-height:1.6;
+}
+.q-num{
+  width:22px;height:22px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--sakura-l),var(--sakura));
+  color:#fff;font-size:10px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;margin-top:1px;
+}
+
+/* CTA */
+.stellar-cta{
+  background:linear-gradient(145deg,#fff0f3,#fffbfc);
+  border:1.5px solid rgba(224,96,122,0.28);
+  border-radius:22px;padding:40px 24px;
+  text-align:center;margin:40px 0 32px;box-shadow:var(--sh-m);
+  position:relative;overflow:hidden;
+}
+.stellar-cta::before{
+  content:"";position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--sakura-l),var(--sakura),var(--gold));
+}
+.cta-label{
+  font-size:10px;letter-spacing:0.2em;font-weight:700;color:var(--sakura-d);
+  background:rgba(224,96,122,0.09);border:1px solid rgba(224,96,122,0.22);
+  padding:4px 14px;border-radius:100px;display:inline-block;margin-bottom:18px;
+}
+.cta-title{
+  font-family:"Shippori Mincho",serif;
+  font-size:clamp(18px,5vw,26px);font-weight:700;color:var(--t0);
+  line-height:1.35;margin-bottom:12px;
+}
+.cta-sub{font-size:13px;color:var(--t2);line-height:1.85;margin-bottom:26px}
+.btn-line{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-size:14px;font-weight:700;letter-spacing:0.06em;
+  color:#fff;background:#06c755;
+  padding:16px 28px;border-radius:14px;text-decoration:none;
+  width:100%;max-width:340px;
+  box-shadow:0 6px 22px rgba(6,199,85,0.28);transition:all 0.22s;
+}
+.btn-line:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(6,199,85,0.36)}
+.cta-note{font-size:11px;color:var(--t3);margin-top:14px;line-height:1.8}
+
+/* footer */
+footer{
+  padding:32px 20px;text-align:center;
+  border-top:1px solid var(--bdr);
+  font-size:11px;color:var(--t3);line-height:1.9;
+}
+.footer-logo{
+  font-family:"Shippori Mincho",serif;
+  font-size:17px;color:var(--sakura-d);
+  margin-bottom:8px;letter-spacing:0.15em;
+}
+
+/* reveal */
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .65s ease,transform .65s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.rd1{transition-delay:.06s}.rd2{transition-delay:.12s}.rd3{transition-delay:.18s}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">🌸 STELLAR 白書 2026</div>
+  <a href="https://line.me/R/ti/p/@688gndvs" target="_blank" rel="noopener" class="nav-cta">無料登録</a>
+</nav>
+
+<div class="wrap">
+
+  <!-- ヘッダー -->
+  <div class="doc-header">
+    <div class="doc-tag">✦ 2026年版 高松特化</div>
+    <h1 class="doc-title">高松ナイトワーク<br><em>桜華白書 2026</em></h1>
+    <p class="doc-sub" style="font-size:14px;color:var(--t2);line-height:1.8;margin-top:8px;">
+      まだ「時給5,000円〜」を信じてる？<br>
+      <strong style="color:var(--t0)">無駄な体入ループから抜け出す、たった一つの方法。</strong>
+    </p>
+    <div class="doc-meta" style="margin-top:14px;">
+      <span class="meta-chip">📍 古馬場町エリア</span>
+      <span class="meta-chip">📅 2025〜2026年調査</span>
+    </div>
+  </div>
+
+  <!-- ハイライト数字 -->
+  <div class="highlights reveal">
+    <div class="hl-card">
+      <div class="hl-val">3,500円</div>
+      <div class="hl-label">求人票の<br>平均表示時給</div>
+    </div>
+    <div class="hl-card">
+      <div class="hl-val">2,477円</div>
+      <div class="hl-label">実態の<br>平均時給</div>
+    </div>
+    <div class="hl-card">
+      <div class="hl-val">29%</div>
+      <div class="hl-label">求人票との<br>乖離率</div>
+    </div>
+  </div>
+
+  <!-- 体入コスト -->
+  <div class="card reveal" style="margin:0 0 8px;border-left:3px solid var(--sakura);">
+    <div class="card-title">⏱️ あなたは「無駄な体入」に何時間奪われてますか？</div>
+    <p style="font-size:13px;color:var(--t2);line-height:1.9;">
+      調査によると、今の店に決まるまでに平均<strong style="color:var(--t0)">4.2店舗の体入</strong>を経験しています。体入1回あたり準備〜移動〜拘束で約6〜8時間。ミスマッチを半年続けると、<strong style="color:var(--sakura-d)">最大72時間もの時間</strong>を「合わない店」のために使っている計算になります。<br><br>
+      これはあなたの見極め力が足りないわけじゃない。<strong style="color:var(--t0)">「お店側だけが情報を持ち、女の子は入ってみるまで実態がわからない」</strong>という、最初から不利な状況に置かれているからです。
+    </p>
+  </div>
+
+  <!-- 第1章 -->
+  <section class="section reveal" id="sec1">
+    <div class="sec-num">CHAPTER 01</div>
+    <h2 class="sec-title">求人票の時給は<br>「本当の時給」ではない</h2>
+
+    <p style="font-size:14px;color:var(--t1);line-height:1.9;margin-bottom:20px;">
+      「時給5,000円〜って書いてあったのに、面接に行ったら<em style="font-style:normal;color:var(--sakura-d);font-weight:700;">『未経験だから3,000円スタートね』</em>って言われた…」<br><br>
+      古馬場町で夜職を探したことがあるなら、一度はこんな経験があるんじゃないでしょうか。求人票の数字を信じて面接に行き、現実とのギャップに落胆する。そしてまた別の求人を探して、体入を繰り返す。<br><br>
+      <strong style="color:var(--t0)">正直、もう疲れませんか？</strong>
+    </p>
+
+    <div class="warn-box" style="margin-bottom:20px;">
+      🚩 <strong>「〜」という表記に隠された罠</strong><br>
+      古馬場町の求人を検索すると、ほぼ100%の店が「時給◯◯円〜」という書き方をしています。求人票に大きく書かれている最高時給は、No.1キャストが各種バックを含めて稼ぎ出す「理論上の最大値」に過ぎません。
+    </div>
+
+    <div class="compare-visual">
+      <div class="compare-label">求人票 vs 実態 時給比較（古馬場町）</div>
+      <div class="bar-row">
+        <div class="bar-item">
+          <div class="bar-meta">
+            <span class="bar-name">求人票の平均表示</span>
+            <span class="bar-num">¥3,500</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill high" style="width:100%"></div></div>
+        </div>
+        <div class="bar-item">
+          <div class="bar-meta">
+            <span class="bar-name">実態の平均時給</span>
+            <span class="bar-num">¥2,477</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill mid" style="width:71%"></div></div>
+        </div>
+        <div class="bar-item">
+          <div class="bar-meta">
+            <span class="bar-name">ガールズバー最低ライン</span>
+            <span class="bar-num">¥1,500</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill low" style="width:43%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="warn-box">🚩 <strong>よくあるケース：</strong>「時給3,500円〜」→ 実態は基本2,000円＋売上バック。売上が取れない初月は最低保障に近い水準になることも。</div>
+
+    <div class="tip-box">💡 <strong>Stellarでは</strong>スカウト到達時に時給・バック率・送り対応などが最初から明記されています。<br>「面接に行ったら条件を下げられた」という時間の無駄を、入り口で完全に防げます。</div>
+  </section>
+
+  <!-- 第2章 -->
+  <section class="section reveal" id="sec2">
+    <div class="sec-num">CHAPTER 02</div>
+    <h2 class="sec-title">業種別・実態時給データ</h2>
+
+    <div class="genre-grid">
+      <div class="genre-row reveal rd1">
+        <div class="genre-icon">💎</div>
+        <div class="genre-name">キャバクラ</div>
+        <div class="genre-range">2,500〜3,500円</div>
+        <span class="genre-tag tag-p">指名バックあり</span>
+      </div>
+      <div class="genre-row reveal rd2">
+        <div class="genre-icon">🥂</div>
+        <div class="genre-name">ラウンジ</div>
+        <div class="genre-range">2,500〜3,500円</div>
+        <span class="genre-tag tag-g">比較的安定</span>
+      </div>
+      <div class="genre-row reveal rd3">
+        <div class="genre-icon">🍶</div>
+        <div class="genre-name">スナック</div>
+        <div class="genre-range">2,000〜2,500円</div>
+        <span class="genre-tag tag-g">固定時給が多い</span>
+      </div>
+      <div class="genre-row reveal rd1">
+        <div class="genre-icon">🍺</div>
+        <div class="genre-name">ガールズバー</div>
+        <div class="genre-range">1,500〜2,500円</div>
+        <span class="genre-tag tag-y">幅が大きい</span>
+      </div>
+      <div class="genre-row reveal rd2">
+        <div class="genre-icon">☕</div>
+        <div class="genre-name">コンカフェ</div>
+        <div class="genre-range">1,500〜2,200円</div>
+        <span class="genre-tag tag-p">雰囲気重視</span>
+      </div>
+    </div>
+
+    <div class="info-box">ℹ️ 「最高時給〇〇円」はトップキャストの数字。同じ業種でも店舗・客層によって大きく差が出ます。</div>
+  </section>
+
+  <!-- 第3章 -->
+  <section class="section reveal" id="sec3">
+    <div class="sec-num">CHAPTER 03</div>
+    <h2 class="sec-title">給料から引かれるもの<br>知ってる？</h2>
+
+    <div class="acc-list">
+      <div class="acc-item">
+        <div class="acc-q" onclick="toggleAcc(this)">
+          <div class="acc-icon ng">🚩</div>
+          <div class="acc-q-text">ドレス代・衣装代</div>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">月数千円〜数万円が天引きされるケースがあります。入店前に「衣装は自前か？店負担か？」を確認しましょう。</div>
+      </div>
+      <div class="acc-item">
+        <div class="acc-q" onclick="toggleAcc(this)">
+          <div class="acc-icon ng">🚩</div>
+          <div class="acc-q-text">罰金・ペナルティ</div>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">遅刻・早退・キャンセルに対して罰金を設けているお店があります。「ペナルティの有無と金額」を面接で確認するのが安全です。</div>
+      </div>
+      <div class="acc-item">
+        <div class="acc-q" onclick="toggleAcc(this)">
+          <div class="acc-icon ng">🚩</div>
+          <div class="acc-q-text">「ノルマなし」の本当の意味</div>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">「ノルマなし」と書いてあっても、同伴・指名・ボトルへの非公式なプレッシャーがあるお店も。「達成できなかった場合のペナルティはありますか？」と直接聞くのが有効です。</div>
+      </div>
+      <div class="acc-item">
+        <div class="acc-q" onclick="toggleAcc(this)">
+          <div class="acc-icon tip">💡</div>
+          <div class="acc-q-text">バック率の計算方法</div>
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="acc-body">ボトルバックは古馬場町相場で1本500〜2,000円。売上バック率は30〜60%が目安。計算式と支払いタイミングを事前に確認することが大切です。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 第4章 -->
+  <section class="section reveal" id="sec4">
+    <div class="sec-num">CHAPTER 04</div>
+    <h2 class="sec-title">ホワイト店舗の<br>見分け方チェックリスト</h2>
+
+    <div class="card">
+      <div class="card-title">✅ 安心できるサイン</div>
+      <ul class="check-list">
+        <li class="ci-ok">時給・バック率が書面（LINE等）で明示される</li>
+        <li class="ci-ok">体験入店の条件が事前に明確に伝えられる</li>
+        <li class="ci-ok">送り迎えが無料（または費用説明がある）</li>
+        <li class="ci-ok">シフトの融通が利く（週1〜でもOK）</li>
+        <li class="ci-ok">強制的な同伴・指名要求がない</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🚩 注意すべきサイン</div>
+      <ul class="check-list">
+        <li class="ci-ng">面接で時給の詳細を濁す・「入ってから決める」</li>
+        <li class="ci-ng">即日入店を強く求める（考える時間を与えない）</li>
+        <li class="ci-ng">個人のLINE IDをすぐに要求する</li>
+        <li class="ci-ng">面接場所がお店以外（ファミレスや個人宅）</li>
+      </ul>
+    </div>
+
+    <div class="tip-box">💡 <strong>Stellarが審査制なのはそのため。</strong>運営が審査した店舗だけが参加できます。問題のある店舗はそもそもスカウトを送れない仕組みです。誠実な店だけが残る環境をつくっています。</div>
+  </section>
+
+  <!-- 第5章 -->
+  <section class="section reveal" id="sec5">
+    <div class="sec-num">CHAPTER 05</div>
+    <h2 class="sec-title">面接で必ず聞くべき<br>5つの質問</h2>
+
+    <div class="card">
+      <ol class="q-list">
+        <li><span class="q-num">1</span><span>固定時給ですか？売上スライド制ですか？</span></li>
+        <li><span class="q-num">2</span><span>バック率は何%で、どのように計算されますか？</span></li>
+        <li><span class="q-num">3</span><span>衣装代・ヘアメイク代などの天引きはありますか？</span></li>
+        <li><span class="q-num">4</span><span>最低保障はいくらですか？</span></li>
+        <li><span class="q-num">5</span><span>昇給のタイミングと基準を教えてください。</span></li>
+      </ol>
+    </div>
+
+    <div class="warn-box">🚩 これらの質問に答えられない・曖昧にする店舗は要注意。複数の体験入店を比較してから決めましょう。</div>
+  </section>
+
+  <!-- CTA -->
+  <div class="stellar-cta reveal">
+    <div class="cta-label">✦ Stellar からのご案内</div>
+    <h2 class="cta-title">もう、嘘の求人に<br>振り回されるのはやめませんか</h2>
+    <p class="cta-sub">
+      「最初から、自分に合う条件の店だけを知りたい。」<br>
+      その当たり前の願いを叶えるのがStellarです。<br><br>
+      顔写真なし・本名不要・登録5分・完全無料。<br>
+      <strong>「探す」苦労を手放して、優良店から「選ばれる」体験を。</strong>
+    </p>
+    <a href="https://line.me/R/ti/p/@688gndvs" target="_blank" rel="noopener" class="btn-line">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
+      公式LINEを追加して無料登録する
+    </a>
+    <p class="cta-note">登録情報は求人目的のみ使用・職業安定法準拠・個人情報保護法準拠</p>
+  </div>
+
+</div>
+
+<footer>
+  <div class="footer-logo">🌸 STELLAR</div>
+  <p>高松・古馬場町ナイトワーク ダイレクトマッチングサービス<br>
+  職業安定法「募集情報等提供事業」として運営 ／ 個人情報保護法準拠</p>
+</footer>
+
+<script>
+// アコーディオン
+function toggleAcc(el) {
+  const item = el.closest(".acc-item");
+  const isOpen = item.classList.contains("open");
+  document.querySelectorAll(".acc-item.open").forEach(i => i.classList.remove("open"));
+  if (!isOpen) item.classList.add("open");
+}
+
+// バーアニメーション
+function animateBars() {
+  document.querySelectorAll(".bar-fill").forEach(bar => {
+    const w = bar.style.width;
+    bar.style.width = "0";
+    setTimeout(() => { bar.style.width = w; }, 300);
+  });
+}
+
+// スクロールリビール
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add("visible");
+      if (e.target.querySelector(".bar-fill")) animateBars();
+      obs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.08, rootMargin: "0px 0px -20px 0px" });
+document.querySelectorAll(".reveal").forEach(el => obs.observe(el));
+</script>
+</body>
+</html>
