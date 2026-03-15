@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="ja" style="color-scheme:light only">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Stellar — 高松ナイトワーク スマートマッチング</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════
+   STELLAR GIRLS — 桜華デザインシステム
+═══════════════════════════════════ */
+:root {
+  /* 桜パレット */
+  --sakura-0:  #fffbfc;
+  --sakura-1:  #fff0f3;
+  --sakura-2:  #fddde6;
+  --sakura-3:  #f9bfcc;
+  --sakura-4:  #f096aa;
+  --sakura-5:  #e0607a;
+  --sakura-6:  #c04060;
+  /* ゴールド */
+  --gold:      #b89240;
+  --gold-l:    #d4ae60;
+  --gold-bg:   rgba(184,146,64,0.08);
+  --gold-bdr:  rgba(184,146,64,0.25);
+  /* テキスト */
+  --text-0:    #1a0c10;
+  --text-1:    #3d1e28;
+  --text-2:    #6b3a48;
+  --text-3:    #9a6070;
+  /* ボーダー */
+  --bdr-light: rgba(224,96,122,0.15);
+  --bdr-mid:   rgba(224,96,122,0.25);
+  /* 影 */
+  --shadow-s:  0 2px 16px rgba(200,64,96,0.08);
+  --shadow-m:  0 8px 32px rgba(200,64,96,0.12);
+  --shadow-l:  0 20px 60px rgba(200,64,96,0.16);
+  /* LINE */
+  --line:      #06c755;
+  /* モーション */
+  --ease-out:  cubic-bezier(0.16,1,0.3,1);
+}
+
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+body {
+  background: #fffbfc !important;
+  color: #1a0c10 !important;
+  color-scheme: light only;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.75;
+  overflow-x: hidden;
+}
+
+/* ── 背景 ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 50% at 0% 0%, rgba(249,191,204,0.35) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 45% at 100% 100%, rgba(253,221,230,0.30) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 60% at 50% 50%, rgba(255,245,248,0.20) 0%, transparent 70%);
+}
+
+/* ── 桜花びら ── */
+.petal-canvas { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+.petal {
+  position: absolute; top: -30px;
+  width: 12px; height: 12px;
+  opacity: 0;
+  animation: petalFall linear infinite;
+}
+@keyframes petalFall {
+  0%   { opacity: 0; transform: translateY(0) translateX(0) rotate(0deg); }
+  5%   { opacity: 0.7; }
+  90%  { opacity: 0.3; }
+  100% { opacity: 0; transform: translateY(105vh) translateX(40px) rotate(480deg); }
+}
+
+/* ── トップライン ── */
+body::after {
+  content: '';
+  position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 200;
+  background: linear-gradient(90deg, var(--sakura-3), var(--sakura-5), var(--sakura-6), var(--sakura-4));
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: 54px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  background: rgba(255,251,252,0.82);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border-bottom: 1px solid var(--bdr-light);
+}
+.nav-logo {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 18px; font-weight: 600; letter-spacing: 0.2em;
+  color: var(--sakura-6);
+  display: flex; align-items: center; gap: 8px;
+}
+.nav-logo-sub {
+  font-size: 9px; letter-spacing: 0.15em; color: var(--text-3);
+  font-family: 'Zen Maru Gothic', sans-serif; font-weight: 400;
+}
+.nav-btn {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+  color: #fff;
+  background: linear-gradient(135deg, var(--sakura-5), var(--sakura-6));
+  padding: 8px 18px; border-radius: 100px; border: none; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(200,64,96,0.28);
+  text-decoration: none;
+  transition: all 0.22s var(--ease-out);
+}
+.nav-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(200,64,96,0.36); }
+
+/* ── セクション共通 ── */
+section, .section { position: relative; z-index: 10; }
+.inner { max-width: 480px; margin: 0 auto; padding: 0 20px; }
+
+/* ══════════════════════════════
+   HERO
+══════════════════════════════ */
+.hero {
+  min-height: 100svh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 90px 20px 60px;
+  text-align: center;
+  position: relative; z-index: 10;
+}
+.hero-tag {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 10px; letter-spacing: 0.2em; font-weight: 700;
+  color: var(--sakura-6);
+  background: rgba(224,96,122,0.10);
+  border: 1px solid var(--bdr-mid);
+  padding: 5px 16px; border-radius: 100px;
+  margin-bottom: 28px;
+  opacity: 0; animation: revealUp 0.8s var(--ease-out) 0.1s forwards;
+}
+.hero-tag::before { content: '🌸'; font-size: 12px; }
+.hero-headline {
+  font-family: 'Shippori Mincho', serif;
+  font-size: clamp(36px, 9vw, 52px);
+  font-weight: 700; line-height: 1.2;
+  color: var(--text-0);
+  margin-bottom: 8px;
+  opacity: 0; animation: revealUp 0.9s var(--ease-out) 0.22s forwards;
+}
+.hero-headline em {
+  font-style: normal;
+  background: linear-gradient(135deg, var(--sakura-5), var(--sakura-6));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero-sub {
+  font-size: 14px; color: var(--text-2); line-height: 1.85;
+  max-width: 340px; margin: 0 auto 32px;
+  opacity: 0; animation: revealUp 0.8s var(--ease-out) 0.34s forwards;
+}
+
+/* 安心バッジ */
+.safety-badges {
+  display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+  margin-bottom: 40px;
+  opacity: 0; animation: revealUp 0.8s var(--ease-out) 0.46s forwards;
+}
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.05em;
+  color: var(--text-1);
+  background: rgba(255,255,255,0.85);
+  border: 1px solid var(--bdr-mid);
+  padding: 7px 14px; border-radius: 100px;
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-s);
+}
+.badge-icon { font-size: 14px; }
+
+/* CTAボタン群 */
+.hero-btns {
+  display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 340px;
+  opacity: 0; animation: revealUp 0.8s var(--ease-out) 0.58s forwards;
+}
+.btn-primary {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  font-size: 14px; font-weight: 700; letter-spacing: 0.08em;
+  color: #fff;
+  background: linear-gradient(135deg, var(--sakura-5) 0%, var(--sakura-6) 100%);
+  padding: 16px 28px; border-radius: 14px; border: none; cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 8px 28px rgba(200,64,96,0.30), inset 0 1px 0 rgba(255,255,255,0.2);
+  transition: all 0.24s var(--ease-out);
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(200,64,96,0.38); }
+.btn-secondary {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  font-size: 13px; font-weight: 700; letter-spacing: 0.06em;
+  color: var(--gold);
+  background: var(--gold-bg);
+  border: 1.5px solid var(--gold-bdr);
+  padding: 14px 28px; border-radius: 14px; cursor: pointer;
+  text-decoration: none;
+  box-shadow: var(--shadow-s);
+  transition: all 0.22s var(--ease-out);
+}
+.btn-secondary:hover { background: rgba(184,146,64,0.14); transform: translateY(-1px); }
+
+/* スクロールヒント */
+.scroll-hint {
+  position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  opacity: 0; animation: revealUp 0.6s var(--ease-out) 1.2s forwards;
+}
+.scroll-line {
+  width: 1px; height: 32px;
+  background: linear-gradient(to bottom, transparent, var(--sakura-4));
+  animation: scrollPulse 2s ease-in-out infinite;
+}
+.scroll-text { font-size: 9px; letter-spacing: 0.2em; color: var(--text-3); }
+@keyframes scrollPulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+/* ══════════════════════════════
+   3つの安心
+══════════════════════════════ */
+.features {
+  padding: 80px 0;
+  background: linear-gradient(180deg, transparent, rgba(253,221,230,0.3), transparent);
+}
+.sec-label {
+  font-size: 9px; letter-spacing: 0.28em; text-transform: uppercase;
+  color: var(--sakura-5); font-weight: 700;
+  display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+}
+.sec-label::before {
+  content: ''; width: 20px; height: 1px;
+  background: linear-gradient(90deg, var(--sakura-4), transparent);
+}
+.sec-title {
+  font-family: 'Shippori Mincho', serif;
+  font-size: clamp(24px, 6vw, 36px);
+  font-weight: 600; color: var(--text-0);
+  line-height: 1.3; margin-bottom: 40px;
+}
+.feat-list { display: flex; flex-direction: column; gap: 16px; }
+.feat-card {
+  background: rgba(255,255,255,0.75);
+  border: 1px solid var(--bdr-light);
+  border-radius: 20px; padding: 28px 24px;
+  box-shadow: var(--shadow-s);
+  backdrop-filter: blur(12px);
+  position: relative; overflow: hidden;
+  transition: transform 0.25s, box-shadow 0.25s;
+}
+.feat-card:active { transform: scale(0.99); }
+.feat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--sakura-3), transparent);
+}
+.feat-num {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 10px; letter-spacing: 0.2em; color: var(--sakura-4);
+  margin-bottom: 12px; display: block; font-weight: 600;
+}
+.feat-icon {
+  font-size: 32px; margin-bottom: 12px; display: block;
+}
+.feat-title {
+  font-size: 16px; font-weight: 700; color: var(--text-0);
+  margin-bottom: 8px; letter-spacing: 0.02em;
+}
+.feat-desc { font-size: 13px; color: var(--text-2); line-height: 1.85; }
+.feat-highlight {
+  display: inline-block; margin-top: 10px;
+  font-size: 11px; font-weight: 700; color: var(--sakura-6);
+  background: rgba(224,96,122,0.08);
+  border: 1px solid var(--bdr-light);
+  padding: 4px 12px; border-radius: 100px;
+}
+
+/* ══════════════════════════════
+   白書CTA（最重要）
+══════════════════════════════ */
+.hakusho-section { padding: 80px 0; }
+.hakusho-card {
+  background: linear-gradient(145deg, rgba(255,255,255,0.9), rgba(255,240,243,0.95));
+  border: 1.5px solid var(--bdr-mid);
+  border-radius: 24px; padding: 40px 28px;
+  box-shadow: var(--shadow-l);
+  backdrop-filter: blur(16px);
+  position: relative; overflow: hidden;
+  text-align: center;
+}
+.hakusho-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--sakura-3), var(--sakura-5), var(--gold-l), var(--sakura-4));
+}
+.hakusho-eyebrow {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 10px; letter-spacing: 0.18em; font-weight: 700;
+  color: var(--gold);
+  background: var(--gold-bg);
+  border: 1px solid var(--gold-bdr);
+  padding: 5px 14px; border-radius: 100px;
+  margin-bottom: 20px;
+}
+.hakusho-hook {
+  font-family: 'Shippori Mincho', serif;
+  font-size: clamp(18px, 5vw, 24px);
+  font-weight: 700; color: var(--text-0);
+  line-height: 1.4; margin-bottom: 10px;
+}
+.hakusho-hook em {
+  font-style: normal; color: var(--sakura-6);
+  text-decoration: underline; text-decoration-color: var(--sakura-3);
+  text-underline-offset: 4px;
+}
+.hakusho-sub {
+  font-size: 13px; color: var(--text-2); line-height: 1.8;
+  margin-bottom: 24px;
+}
+.hakusho-offer {
+  background: linear-gradient(135deg, rgba(224,96,122,0.08), rgba(184,146,64,0.06));
+  border: 1px solid var(--bdr-mid);
+  border-radius: 14px; padding: 18px 20px; margin-bottom: 24px;
+  text-align: left;
+}
+.hakusho-offer-title {
+  font-size: 13px; font-weight: 700; color: var(--text-0); margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.hakusho-offer-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.hakusho-offer-list li {
+  font-size: 12px; color: var(--text-2);
+  display: flex; align-items: flex-start; gap: 6px;
+}
+.hakusho-offer-list li::before { content: '🌸'; font-size: 10px; flex-shrink: 0; margin-top: 2px; }
+.btn-hakusho {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; font-size: 14px; font-weight: 700; letter-spacing: 0.06em;
+  color: #fff;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-l) 100%);
+  padding: 16px 24px; border-radius: 14px; border: none; cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 8px 28px rgba(184,146,64,0.30), inset 0 1px 0 rgba(255,255,255,0.2);
+  transition: all 0.24s var(--ease-out);
+  margin-bottom: 10px;
+}
+.btn-hakusho:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(184,146,64,0.38); }
+.hakusho-note { font-size: 11px; color: var(--text-3); }
+
+/* ══════════════════════════════
+   登録ステップ
+══════════════════════════════ */
+.steps-section { padding: 80px 0; }
+.steps-list { display: flex; flex-direction: column; gap: 0; position: relative; margin-top: 40px; }
+.steps-list::before {
+  content: ''; position: absolute;
+  left: 24px; top: 48px; bottom: 24px; width: 1px;
+  background: linear-gradient(to bottom, var(--sakura-3), transparent);
+}
+.step-item {
+  display: flex; gap: 20px; padding: 20px 0;
+  border-bottom: 1px solid var(--bdr-light);
+}
+.step-item:last-child { border-bottom: none; }
+.step-num {
+  width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--sakura-4), var(--sakura-5));
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Shippori Mincho', serif;
+  font-size: 18px; font-weight: 700; color: #fff;
+  position: relative; z-index: 1;
+  box-shadow: 0 4px 14px rgba(200,64,96,0.25);
+}
+.step-body-t {
+  font-size: 15px; font-weight: 700; color: var(--text-0);
+  margin-bottom: 6px;
+}
+.step-body-s { font-size: 13px; color: var(--text-2); line-height: 1.8; }
+
+/* ══════════════════════════════
+   Q&A
+══════════════════════════════ */
+.qa-section { padding: 80px 0; }
+.qa-list { display: flex; flex-direction: column; gap: 12px; margin-top: 40px; }
+.qa-item {
+  background: rgba(255,255,255,0.75);
+  border: 1px solid var(--bdr-light);
+  border-radius: 16px; overflow: hidden;
+  box-shadow: var(--shadow-s);
+  backdrop-filter: blur(8px);
+}
+.qa-q {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 18px 20px; cursor: pointer;
+  transition: background 0.2s;
+}
+.qa-q:active { background: rgba(224,96,122,0.04); }
+.qa-q-icon {
+  width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--sakura-4), var(--sakura-5));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff;
+  margin-top: 1px;
+}
+.qa-q-text { font-size: 14px; font-weight: 700; color: var(--text-0); line-height: 1.5; flex: 1; }
+.qa-arrow {
+  font-size: 12px; color: var(--text-3); flex-shrink: 0;
+  transition: transform 0.3s; margin-top: 4px;
+}
+.qa-item.open .qa-arrow { transform: rotate(180deg); }
+.qa-a {
+  display: none; padding: 0 20px 18px 58px;
+  font-size: 13px; color: var(--text-2); line-height: 1.85;
+  border-top: 1px solid var(--bdr-light);
+  padding-top: 14px;
+}
+.qa-item.open .qa-a { display: block; }
+.qa-a strong { color: var(--text-0); }
+
+/* ══════════════════════════════
+   最終CTA
+══════════════════════════════ */
+.final-cta {
+  padding: 80px 0 100px;
+  text-align: center;
+}
+.final-card {
+  background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(253,221,230,0.85));
+  border: 1.5px solid var(--bdr-mid);
+  border-radius: 28px; padding: 52px 28px;
+  box-shadow: var(--shadow-l);
+  position: relative; overflow: hidden;
+}
+.final-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--sakura-3), var(--sakura-5), var(--sakura-4));
+}
+.final-card::after {
+  content: '🌸';
+  position: absolute; bottom: -10px; right: -10px;
+  font-size: 100px; opacity: 0.06; pointer-events: none;
+}
+.final-title {
+  font-family: 'Shippori Mincho', serif;
+  font-size: clamp(22px, 6vw, 32px);
+  font-weight: 700; color: var(--text-0);
+  line-height: 1.3; margin-bottom: 12px;
+}
+.final-sub {
+  font-size: 13px; color: var(--text-2); line-height: 1.85;
+  margin-bottom: 32px;
+}
+.btn-line {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; font-size: 14px; font-weight: 700; letter-spacing: 0.08em;
+  color: #fff;
+  background: var(--line);
+  padding: 17px 28px; border-radius: 14px; border: none; cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 8px 28px rgba(6,199,85,0.28);
+  transition: all 0.24s var(--ease-out);
+  margin-bottom: 12px;
+}
+.btn-line:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(6,199,85,0.38); }
+.final-note {
+  font-size: 11px; color: var(--text-3); line-height: 1.9;
+}
+
+/* ── フッター ── */
+footer {
+  position: relative; z-index: 10;
+  border-top: 1px solid var(--bdr-light);
+  padding: 32px 20px; text-align: center;
+  background: rgba(255,255,255,0.5);
+}
+.footer-logo {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 18px; letter-spacing: 0.2em; color: var(--sakura-5);
+  margin-bottom: 8px;
+}
+.footer-text { font-size: 11px; color: var(--text-3); line-height: 1.9; }
+
+/* ── アニメーション ── */
+@keyframes revealUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.reveal {
+  opacity: 0; transform: translateY(24px);
+  transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out);
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+.reveal-delay-1 { transition-delay: 0.07s; }
+.reveal-delay-2 { transition-delay: 0.14s; }
+.reveal-delay-3 { transition-delay: 0.21s; }
+.reveal-delay-4 { transition-delay: 0.28s; }
+.reveal-delay-5 { transition-delay: 0.35s; }
+
+/* ── レスポンシブ ── */
+@media(prefers-color-scheme:dark){
+  html,body{background:#fffbfc !important;color:#1a0c10 !important}
+  .feat-card,.hakusho-card,.qa-item,.final-card{background:rgba(255,255,255,0.92) !important}
+  nav{background:rgba(255,251,252,0.95) !important}
+}
+@media (max-width: 360px) {
+  .hero-headline { font-size: 32px; }
+  .safety-badges { gap: 6px; }
+  .badge { font-size: 10px; padding: 6px 11px; }
+}
+</style>
+</head>
+<body>
+
+<!-- 花びら -->
+<div class="petal-canvas" id="petalCanvas"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    🌸 STELLAR
+    <span class="nav-logo-sub">for Girls</span>
+  </div>
+  <a href="https://line.me/R/ti/p/@688gndvs" target="_blank" rel="noopener" class="nav-btn">無料登録</a>
+</nav>
+
+<!-- ══════ HERO ══════ -->
+<section class="hero" id="top">
+  <div class="hero-tag">高松・古馬場町特化マッチング</div>
+  <h1 class="hero-headline">
+    選ばれるより、<br><em>選ぶ側へ。</em>
+  </h1>
+  <p class="hero-sub">
+    高松・古馬場町特化。あなたの条件を満たした優良店からだけ、スカウトが届く。
+  </p>
+
+  <div class="safety-badges">
+    <span class="badge"><span class="badge-icon">📷</span>顔写真なし</span>
+    <span class="badge"><span class="badge-icon">🙈</span>本名不要</span>
+    <span class="badge"><span class="badge-icon">🛡️</span>特定店舗ブロック可</span>
+  </div>
+
+  <div class="hero-btns">
+    <a href="https://line.me/R/ti/p/@688gndvs" target="_blank" rel="noopener" class="btn-primary">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
+      LINEで無料登録する
+    </a>
+    <a href="#hakusho" class="btn-secondary">
+      📖 高松ナイトワーク白書を無料でもらう
+    </a>
+  </div>
+
+  <div class="scroll-hint" aria-hidden="true">
+    <div class="scroll-line"></div>
+    <span class="scroll-text">Scroll</span>
+  </div>
+</section>
+
+<!-- ══════ 3つの安心 ══════ -->
+<section class="features">
+  <div class="inner">
+    <div class="reveal">
+      <div class="sec-label">3つの安心</div>
+      <h2 class="sec-title">Stellarが選ばれる<br>3つの理由</h2>
+    </div>
+
+    <div class="feat-list">
+      <div class="feat-card reveal reveal-delay-1">
+        <span class="feat-num">01</span>
+        <span class="feat-icon">🛡️</span>
+        <div class="feat-title">今の店にバレない</div>
+        <p class="feat-desc">
+          登録時に「見られたくないお店」を指定するだけ。その店舗にはあなたのプロフィールが一切表示されません。顔写真なし・本名不要なので、知り合いに見られる心配もゼロ。
+        </p>
+        <span class="feat-highlight">特定店舗ブロック機能つき</span>
+      </div>
+
+      <div class="feat-card reveal reveal-delay-2">
+        <span class="feat-num">02</span>
+        <span class="feat-icon">📋</span>
+        <div class="feat-title">「行ったら条件が違った」を防ぐ</div>
+        <p class="feat-desc">
+          Stellarのスカウトには、お店が提示する時給・バック率・送り対応などの条件が最初から明記されています。その条件をあなたが確認・納得した上でお返事できるので、面接に行ってから「話が違う」というトラブルを事前に防げます。
+        </p>
+        <span class="feat-highlight">条件は事前に全部わかる</span>
+      </div>
+
+      <div class="feat-card reveal reveal-delay-3">
+        <span class="feat-num">03</span>
+        <span class="feat-icon">💬</span>
+        <div class="feat-title">LINEで全部完結</div>
+        <p class="feat-desc">
+          登録もスカウトの受け取りも、すべてLINEで完結。お店との最初のやり取りは運営がLINEでご案内するので、直接お店に電話したり、直接連絡先を教える必要はありません。
+        </p>
+        <span class="feat-highlight">個人LINEはお店に渡らない</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════ 白書CTA ══════ -->
+<section class="hakusho-section" id="hakusho">
+  <div class="inner">
+    <div class="hakusho-card reveal">
+      <div class="hakusho-eyebrow">✦ 期間限定 無料プレゼント</div>
+      <h2 class="hakusho-hook">
+        高松の夜職、<br>求人票の時給は<em>「嘘」ばかり</em>？
+      </h2>
+      <p class="hakusho-sub">
+        「時給3,500円」と書いてあったのに、実際は全然違った…そんな経験はありませんか？高松古馬場町の実態を徹底調査した白書を、公式LINE登録で今すぐ無料でお渡しします。
+      </p>
+
+      <div class="hakusho-offer">
+        <div class="hakusho-offer-title">📖 高松ナイトワーク桜華白書2026 — 収録内容</div>
+        <ul class="hakusho-offer-list">
+          <li>古馬場町エリアの業種別・実態時給データ</li>
+          <li>バック率・ボトルバック相場の比較</li>
+          <li>「ホワイト店舗」の見分け方チェックリスト</li>
+          <li>未経験者が損しないための交渉ポイント</li>
+        </ul>
+      </div>
+
+      <a href="https://line.me/R/ti/p/@688gndvs" target="_blank" rel="noopener" class="btn-hakusho">
+        📖 公式LINEを追加して白書を無料でもらう
+      </a>
+      <p class="hakusho-note">登録は無料・強制や勧誘は一切ありません</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════ 登録ステップ ══════ -->
+<section class="steps-section">
+  <div class="inner">
+    <div class="reveal">
+      <div class="sec-label">How it works</div>
+      <h2 class="sec-title">登録から<br>スカウト受取まで</h2>
+    </div>
+
+    <div class="steps-list">
+      <div class="step-item reveal reveal-delay-1">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-body-t">公式LINEを追加してプロフィールを入力</div>
+          <div class="step-body-s">ニックネームと希望条件を入力するだけ。顔写真なし・本名不要。所要時間は約5分です。</div>
+        </div>
+      </div>
+      <div class="step-item reveal reveal-delay-2">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-body-t">待つだけでOK</div>
+          <div class="step-body-s">あなたの条件に合ったお店だけがスカウトを送れます。条件が合わないお店からは連絡が来ません。</div>
+        </div>
+      </div>
+      <div class="step-item reveal reveal-delay-3">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-body-t">気になるスカウトだけ返事する</div>
+          <div class="step-body-s">時給・条件が事前に明記されたスカウトが届きます。興味があれば承諾、なければスルーでOK。強制は一切ありません。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════ Q&A ══════ -->
+<section class="qa-section">
+  <div class="inner">
+    <div class="reveal">
+      <div class="sec-label">FAQ</div>
+      <h2 class="sec-title">よくある不安に<br>正直にお答えします</h2>
+    </div>
+
+    <div class="qa-list">
+      <div class="qa-item reveal reveal-delay-1">
+        <div class="qa-q" onclick="toggleQA(this)">
+          <div class="qa-q-icon">Q</div>
+          <div class="qa-q-text">今、古馬場町で働いている店にバレませんか？</div>
+          <span class="qa-arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          登録時に「見られたくないお店」を指定できます。指定した店舗にはあなたのプロフィールが一切表示されません。また顔写真なし・本名不要なので、知人に見られても特定される心配がありません。
+        </div>
+      </div>
+
+      <div class="qa-item reveal reveal-delay-2">
+        <div class="qa-q" onclick="toggleQA(this)">
+          <div class="qa-q-icon">Q</div>
+          <div class="qa-q-text">面接に行ったら時給を下げられそうで怖いです。</div>
+          <span class="qa-arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          Stellarではスカウト到達時に<strong>具体的な時給や条件が明記</strong>されています。プロフィール情報に嘘偽りがない限り、事前の提示条件をベースにお話が進みます。そのため「行ってみたら全然違う条件だった」という理不尽なトラブルを防げます。<br>
+          <small style="color:var(--text-3);display:block;margin-top:8px;">※ 登録情報と実際の経験が大きく異なる場合や、勤務態度に問題がある場合などは、店舗側との再相談になることがあります。</small>
+        </div>
+      </div>
+
+      <div class="qa-item reveal reveal-delay-3">
+        <div class="qa-q" onclick="toggleQA(this)">
+          <div class="qa-q-icon">Q</div>
+          <div class="qa-q-text">未経験でも登録できますか？</div>
+          <span class="qa-arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          もちろんです。登録者の中には未経験の方も多く、未経験歓迎のお店も多数登録しています。「未経験」と正直に入力することで、未経験OKのお店からだけスカウトが届きます。
+        </div>
+      </div>
+
+      <div class="qa-item reveal reveal-delay-4">
+        <div class="qa-q" onclick="toggleQA(this)">
+          <div class="qa-q-icon">Q</div>
+          <div class="qa-q-text">お酒が飲めないのですが大丈夫ですか？</div>
+          <span class="qa-arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          大丈夫です。登録時にお酒の強さを申告できます。「飲めない」と設定しておけば、それを理解した上でスカウトを送ってくるお店だけが届きます。
+        </div>
+      </div>
+
+      <div class="qa-item reveal reveal-delay-5">
+        <div class="qa-q" onclick="toggleQA(this)">
+          <div class="qa-q-icon">Q</div>
+          <div class="qa-q-text">車がないのですが、送迎はありますか？</div>
+          <span class="qa-arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          プロフィールで「送り必須」と設定できます。送り対応があるお店からのスカウトだけが届くので、交通手段の心配なく働けるお店を探せます。
+        </div>
+      </div>
+
+      <div class="qa-item reveal reveal-delay-5">
+        <div class="qa-q" onclick="toggleQA(this)">
+          <div class="qa-q-icon">Q</div>
+          <div class="qa-q-text">登録したら絶対に働かないといけませんか？</div>
+          <span class="qa-arrow">▼</span>
+        </div>
+        <div class="qa-a">
+          いいえ、一切強制はありません。スカウトが届いても返事をしなくてOKですし、登録後にやっぱりやめようと思ったらいつでも退会・データ削除を申請できます。まずは気軽に登録してみてください。
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════ 最終CTA ══════ -->
+<section class="final-cta">
+  <div class="inner">
+    <div class="final-card reveal">
+      <h2 class="final-title">まず、登録だけ<br>してみませんか？</h2>
+      <p class="final-sub">
+        登録は無料・5分・強制なし。<br>
+        高松ナイトワーク白書も今すぐ無料でもらえます。
+      </p>
+      <a href="https://line.me/R/ti/p/@688gndvs" target="_blank" rel="noopener" class="btn-line">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
+        公式LINEを追加して無料登録する
+      </a>
+      <p class="final-note">
+        登録情報は求人目的にのみ使用します。<br>
+        職業安定法「募集情報等提供事業」として運営・個人情報保護法準拠
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">🌸 STELLAR</div>
+  <p class="footer-text">
+    高松・古馬場町ナイトワーク ダイレクトマッチングサービス<br>
+    職業安定法「募集情報等提供事業」として運営 ／ 個人情報保護法準拠
+  </p>
+</footer>
+
+<script>
+/* ── 花びらアニメーション ── */
+function initPetals() {
+  const canvas = document.getElementById('petalCanvas');
+  if (!canvas) return;
+  const svg = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><ellipse cx="10" cy="10" rx="7" ry="4" fill="rgba(240,150,170,0.55)" transform="rotate(-30 10 10)"/></svg>`;
+  for (let i = 0; i < 14; i++) {
+    const el = document.createElement('div');
+    el.className = 'petal';
+    el.innerHTML = svg;
+    const size = 8 + Math.random() * 10;
+    el.style.cssText = `left:${Math.random()*100}%;width:${size}px;height:${size}px;animation-duration:${9+Math.random()*10}s;animation-delay:${Math.random()*14}s;`;
+    canvas.appendChild(el);
+  }
+}
+
+/* ── スクロールリビール ── */
+const revealObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('visible'); revealObs.unobserve(e.target); }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
+document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+/* ── Q&Aアコーディオン ── */
+function toggleQA(el) {
+  const item = el.closest('.qa-item');
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.qa-item.open').forEach(i => i.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+
+/* ── スムーススクロール ── */
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  });
+});
+
+/* ── 起動 ── */
+initPetals();
+</script>
+</body>
+</html>
