@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="ja" style="color-scheme:light only">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Stellar — プロフィール登録の使い方</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sakura-0:  #fffbfc;
+  --sakura-1:  #fff0f3;
+  --sakura-2:  #fddde6;
+  --sakura-3:  #f9bfcc;
+  --sakura-4:  #f096aa;
+  --sakura-5:  #e0607a;
+  --sakura-6:  #c04060;
+  --gold:      #b89240;
+  --gold-l:    #d4ae60;
+  --gold-bg:   rgba(184,146,64,0.08);
+  --gold-bdr:  rgba(184,146,64,0.25);
+  --text-0:    #1a0c10;
+  --text-1:    #3d1e28;
+  --text-2:    #6b3a48;
+  --text-3:    #9a6070;
+  --bdr-light: rgba(224,96,122,0.15);
+  --bdr-mid:   rgba(224,96,122,0.25);
+  --shadow-s:  0 2px 16px rgba(200,64,96,0.08);
+  --shadow-m:  0 8px 32px rgba(200,64,96,0.12);
+  --line:      #06c755;
+  --ease-out:  cubic-bezier(0.16,1,0.3,1);
+}
+
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+body {
+  background: #fffbfc !important;
+  color: #1a0c10 !important;
+  color-scheme: light only;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.75;
+  overflow-x: hidden;
+  padding-bottom: 60px;
+}
+
+/* 背景グラデ */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 50% at 0% 0%, rgba(249,191,204,0.35) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 45% at 100% 100%, rgba(253,221,230,0.30) 0%, transparent 55%);
+}
+
+/* トップライン */
+body::after {
+  content: '';
+  position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 200;
+  background: linear-gradient(90deg, var(--sakura-3), var(--sakura-5), var(--sakura-6), var(--sakura-4));
+}
+
+/* 桜花びら */
+.petal-canvas { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+.petal {
+  position: absolute; top: -30px;
+  width: 12px; height: 12px;
+  opacity: 0;
+  animation: petalFall linear infinite;
+}
+@keyframes petalFall {
+  0%   { opacity: 0; transform: translateY(0) translateX(0) rotate(0deg); }
+  5%   { opacity: 0.6; }
+  90%  { opacity: 0.2; }
+  100% { opacity: 0; transform: translateY(105vh) translateX(40px) rotate(480deg); }
+}
+
+/* NAV */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: 54px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 24px;
+  background: rgba(255,251,252,0.88);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border-bottom: 1px solid var(--bdr-light);
+}
+.nav-logo {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 20px; font-weight: 700;
+  color: var(--sakura-6);
+  letter-spacing: 0.05em;
+}
+
+/* MAIN */
+main {
+  position: relative; z-index: 2;
+  padding: 80px 20px 0;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* ヘッダー */
+.page-header {
+  text-align: center;
+  padding: 32px 0 40px;
+}
+.page-header .label {
+  display: inline-block;
+  font-size: 11px; font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: var(--gold-bg);
+  border: 1px solid var(--gold-bdr);
+  border-radius: 100px;
+  padding: 4px 14px;
+  margin-bottom: 16px;
+}
+.page-header h1 {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 26px; font-weight: 700;
+  color: var(--text-0);
+  line-height: 1.4;
+  margin-bottom: 12px;
+}
+.page-header p {
+  font-size: 14px;
+  color: var(--text-2);
+  line-height: 1.8;
+}
+
+/* 所要時間バッジ */
+.time-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--sakura-1);
+  border: 1px solid var(--bdr-mid);
+  border-radius: 100px;
+  padding: 6px 16px;
+  font-size: 13px;
+  color: var(--sakura-6);
+  font-weight: 700;
+  margin-top: 16px;
+}
+
+/* STEP カード */
+.steps { display: flex; flex-direction: column; gap: 16px; }
+
+.step-card {
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--bdr-light);
+  border-radius: 20px;
+  padding: 24px 20px;
+  box-shadow: var(--shadow-s);
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeUp 0.5s var(--ease-out) forwards;
+}
+.step-card:nth-child(1) { animation-delay: 0.1s; }
+.step-card:nth-child(2) { animation-delay: 0.2s; }
+.step-card:nth-child(3) { animation-delay: 0.3s; }
+.step-card:nth-child(4) { animation-delay: 0.4s; }
+.step-card:nth-child(5) { animation-delay: 0.5s; }
+.step-card:nth-child(6) { animation-delay: 0.6s; }
+
+@keyframes fadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ステップ番号 */
+.step-num {
+  flex-shrink: 0;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--sakura-4), var(--sakura-6));
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Shippori Mincho', serif;
+  font-size: 16px; font-weight: 700;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(224,96,122,0.35);
+}
+
+.step-body { flex: 1; }
+.step-body h3 {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 16px; font-weight: 700;
+  color: var(--text-0);
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+.step-body p {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.8;
+}
+
+/* タグ */
+.tag-list {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-top: 10px;
+}
+.tag {
+  font-size: 12px;
+  background: var(--sakura-1);
+  border: 1px solid var(--bdr-mid);
+  border-radius: 100px;
+  padding: 3px 10px;
+  color: var(--sakura-6);
+  font-weight: 700;
+}
+
+/* コネクター */
+.connector {
+  display: flex; justify-content: center;
+  height: 20px;
+  position: relative;
+}
+.connector::after {
+  content: '';
+  position: absolute;
+  left: 50%; top: 0;
+  transform: translateX(-50%);
+  width: 1px; height: 100%;
+  background: linear-gradient(to bottom, var(--sakura-3), transparent);
+}
+
+/* ポイントボックス */
+.point-box {
+  background: var(--gold-bg);
+  border: 1px solid var(--gold-bdr);
+  border-radius: 16px;
+  padding: 20px;
+  margin-top: 32px;
+  opacity: 0;
+  animation: fadeUp 0.5s var(--ease-out) 0.8s forwards;
+}
+.point-box .point-title {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 14px; font-weight: 700;
+  color: var(--gold);
+  margin-bottom: 12px;
+  display: flex; align-items: center; gap: 6px;
+}
+.point-box ul {
+  list-style: none;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.point-box ul li {
+  font-size: 13px;
+  color: var(--text-1);
+  line-height: 1.7;
+  padding-left: 16px;
+  position: relative;
+}
+.point-box ul li::before {
+  content: '✦';
+  position: absolute; left: 0;
+  color: var(--gold-l);
+  font-size: 10px;
+  top: 5px;
+}
+
+/* CTAボタン */
+.cta-wrap {
+  margin-top: 36px;
+  text-align: center;
+  opacity: 0;
+  animation: fadeUp 0.5s var(--ease-out) 1s forwards;
+}
+.btn-cta {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%;
+  background: linear-gradient(135deg, var(--sakura-5), var(--sakura-6));
+  color: #fff;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 16px; font-weight: 700;
+  padding: 18px 24px;
+  border-radius: 100px;
+  border: none; cursor: pointer;
+  box-shadow: 0 8px 24px rgba(192,64,96,0.35);
+  text-decoration: none;
+  transition: transform 0.2s var(--ease-out), box-shadow 0.2s;
+  letter-spacing: 0.03em;
+}
+.btn-cta:active {
+  transform: scale(0.97);
+  box-shadow: 0 4px 12px rgba(192,64,96,0.25);
+}
+.cta-note {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+/* 区切り */
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--bdr-mid), transparent);
+  margin: 36px 0;
+}
+
+/* FAQ */
+.faq-title {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 18px; font-weight: 700;
+  color: var(--text-0);
+  text-align: center;
+  margin-bottom: 20px;
+}
+.faq-item {
+  background: rgba(255,255,255,0.75);
+  border: 1px solid var(--bdr-light);
+  border-radius: 16px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.faq-q {
+  padding: 16px 20px;
+  font-size: 14px; font-weight: 700;
+  color: var(--text-1);
+  cursor: pointer;
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 12px;
+  user-select: none;
+}
+.faq-q::after {
+  content: '＋';
+  color: var(--sakura-5);
+  font-size: 18px;
+  flex-shrink: 0;
+  transition: transform 0.3s;
+}
+.faq-item.open .faq-q::after { transform: rotate(45deg); }
+.faq-a {
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.4s var(--ease-out), padding 0.3s;
+  padding: 0 20px;
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.85;
+}
+.faq-item.open .faq-a {
+  max-height: 300px;
+  padding: 0 20px 16px;
+}
+</style>
+</head>
+<body>
+
+<!-- 桜花びら -->
+<div class="petal-canvas" id="petals"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">✦ Stellar</div>
+</nav>
+
+<main>
+
+  <!-- ヘッダー -->
+  <div class="page-header">
+    <div class="label">HOW TO USE</div>
+    <h1>プロフィール登録の<br>使い方</h1>
+    <p>登録はすべて無料。<br>スマホひとつで完結します。</p>
+    <div class="time-badge">⏱ 所要時間：約3〜5分</div>
+  </div>
+
+  <!-- ステップ -->
+  <div class="steps">
+
+    <div class="step-card">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h3>Stellar公式LINEを<br>友達追加する</h3>
+        <p>まずStellarの公式LINEアカウント（@688gndvs）を友達追加してください。すでに追加済みの方はスキップしてOKです。</p>
+      </div>
+    </div>
+
+    <div class="connector"></div>
+
+    <div class="step-card">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h3>「プロフィール登録」を<br>タップする</h3>
+        <p>LINEのトークメニュー（下部リッチメニュー）から「プロフィール登録」をタップ。登録フォームが開きます。</p>
+      </div>
+    </div>
+
+    <div class="connector"></div>
+
+    <div class="step-card">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h3>基本情報を入力する</h3>
+        <p>以下の項目を入力します。すべてスカウトする店舗にのみ公開されます。</p>
+        <div class="tag-list">
+          <span class="tag">生年月日</span>
+          <span class="tag">ニックネーム</span>
+          <span class="tag">身長</span>
+          <span class="tag">体型</span>
+          <span class="tag">雰囲気</span>
+          <span class="tag">経験の有無</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="connector"></div>
+
+    <div class="step-card">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h3>希望条件を入力する</h3>
+        <p>自分の希望に合ったスカウトだけが届くよう、条件を設定します。</p>
+        <div class="tag-list">
+          <span class="tag">希望時給</span>
+          <span class="tag">勤務日数</span>
+          <span class="tag">送迎の要否</span>
+          <span class="tag">業種（キャバ・スナックなど）</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="connector"></div>
+
+    <div class="step-card">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <h3>見られたくない店舗を<br>ブロック設定する</h3>
+        <p>知り合いがいるお店や、バレたくないお店を選んでブロックできます。そのお店からはプロフィールが見えない状態になります。</p>
+      </div>
+    </div>
+
+    <div class="connector"></div>
+
+    <div class="step-card">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <h3>登録完了！<br>スカウトを待つだけ</h3>
+        <p>登録が完了するとLINEに確認メッセージが届きます。あとはお店からのスカウトを待つだけ。スカウトが届いたらLINEで通知が来ます。</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ポイントボックス -->
+  <div class="point-box">
+    <div class="point-title">✦ Stellarの安心ポイント</div>
+    <ul>
+      <li>登録・利用は完全無料。女の子側に費用は一切かかりません。</li>
+      <li>プロフィールはスカウトを送る店舗にしか公開されません。</li>
+      <li>ブロック設定で特定のお店から見えなくなります。</li>
+      <li>スカウトの承諾・辞退はあなたが自由に決められます。</li>
+    </ul>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-wrap">
+    <a class="btn-cta" href="https://liff.line.me/2009433766-cC9FyvXt">
+      ✦ プロフィールを登録する
+    </a>
+    <p class="cta-note">LINEアプリが開きます・登録無料</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- FAQ -->
+  <div class="faq-title">よくある質問</div>
+
+  <div class="faq-item">
+    <div class="faq-q">登録に費用はかかりますか？</div>
+    <div class="faq-a">女の子の登録・利用は完全無料です。費用は一切かかりません。</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">プロフィールは誰に見られますか？</div>
+    <div class="faq-a">Stellarに登録している店舗のみに公開されます。一般公開や他サービスへの共有は行いません。またブロック設定した店舗には表示されません。</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">スカウトが来たらどうなりますか？</div>
+    <div class="faq-a">LINEに通知が届きます。スカウト内容（時給・バック率・送迎など）を確認した上で、承諾か辞退かを自分で決められます。承諾しても入店確約ではなく、まずお店と話してみる流れになります。</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">退会・データ削除はできますか？</div>
+    <div class="faq-a">いつでも可能です。Stellar公式LINEよりサポートにご連絡ください。</div>
+  </div>
+
+</main>
+
+<script>
+// 桜花びら生成
+const canvas = document.getElementById('petals');
+const petalSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><ellipse cx="10" cy="10" rx="9" ry="5" fill="rgba(240,150,170,0.55)" transform="rotate(-30 10 10)"/></svg>`;
+const petalBlob = new Blob([petalSVG], {type:'image/svg+xml'});
+const petalURL = URL.createObjectURL(petalBlob);
+
+for (let i = 0; i < 12; i++) {
+  const el = document.createElement('img');
+  el.src = petalURL;
+  el.className = 'petal';
+  el.style.left = Math.random() * 100 + '%';
+  el.style.width = el.style.height = (8 + Math.random() * 10) + 'px';
+  el.style.animationDuration = (8 + Math.random() * 8) + 's';
+  el.style.animationDelay = '-' + Math.random() * 12 + 's';
+  el.style.opacity = '0';
+  canvas.appendChild(el);
+}
+
+// FAQ アコーディオン
+document.querySelectorAll('.faq-q').forEach(q => {
+  q.addEventListener('click', () => {
+    const item = q.closest('.faq-item');
+    item.classList.toggle('open');
+  });
+});
+</script>
+</body>
+</html>
