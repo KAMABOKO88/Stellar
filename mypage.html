@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="ja" style="color-scheme:light only">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Stellar — マイページ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<!-- LIFF -->
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+<style>
+:root {
+  --sakura-0:  #fffbfc;
+  --sakura-1:  #fff0f3;
+  --sakura-2:  #fddde6;
+  --sakura-3:  #f9bfcc;
+  --sakura-4:  #f096aa;
+  --sakura-5:  #e0607a;
+  --sakura-6:  #c04060;
+  --gold:      #b89240;
+  --gold-l:    #d4ae60;
+  --gold-bg:   rgba(184,146,64,0.08);
+  --gold-bdr:  rgba(184,146,64,0.25);
+  --green:     #16a34a;
+  --green-bg:  rgba(22,163,74,0.08);
+  --green-bdr: rgba(22,163,74,0.25);
+  --red:       #dc2626;
+  --red-bg:    rgba(220,38,38,0.08);
+  --red-bdr:   rgba(220,38,38,0.2);
+  --text-0:    #1a0c10;
+  --text-1:    #3d1e28;
+  --text-2:    #6b3a48;
+  --text-3:    #9a6070;
+  --bdr-light: rgba(224,96,122,0.15);
+  --bdr-mid:   rgba(224,96,122,0.25);
+  --shadow-s:  0 2px 16px rgba(200,64,96,0.08);
+  --ease-out:  cubic-bezier(0.16,1,0.3,1);
+}
+
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: -webkit-fill-available; }
+body {
+  background: #fffbfc !important;
+  color: #1a0c10 !important;
+  color-scheme: light only;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 15px;
+  line-height: 1.75;
+  overflow-x: hidden;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  padding-bottom: max(80px, env(safe-area-inset-bottom, 80px));
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 50% at 0% 0%, rgba(249,191,204,0.3) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 45% at 100% 100%, rgba(253,221,230,0.25) 0%, transparent 55%);
+}
+
+body::after {
+  content: '';
+  position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 200;
+  background: linear-gradient(90deg, var(--sakura-3), var(--sakura-5), var(--sakura-6), var(--sakura-4));
+}
+
+/* ── LOADING ── */
+#loading {
+  position: fixed; inset: 0; z-index: 300;
+  background: #fffbfc;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 16px;
+}
+.loading-logo {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 28px; font-weight: 700;
+  color: var(--sakura-6);
+}
+.loading-spinner {
+  width: 28px; height: 28px;
+  border: 2px solid var(--bdr-light);
+  border-top-color: var(--sakura-5);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: 54px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px;
+  background: rgba(255,251,252,0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--bdr-light);
+}
+.nav-logo {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 18px; font-weight: 700;
+  color: var(--sakura-6);
+}
+.nav-name {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+/* ── TAB BAR ── */
+.tab-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  height: max(60px, calc(60px + env(safe-area-inset-bottom, 0px)));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: rgba(255,251,252,0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--bdr-light);
+  display: flex; align-items: flex-start; justify-content: space-around;
+  padding-top: 8px;
+}
+.tab-item {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  font-size: 10px; font-weight: 700;
+  color: var(--text-3);
+  cursor: pointer;
+  padding: 4px 16px;
+  border-radius: 12px;
+  transition: color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.tab-item.active { color: var(--sakura-6); }
+.tab-icon { font-size: 20px; line-height: 1; }
+
+/* ── MAIN ── */
+main {
+  position: relative; z-index: 2;
+  padding: 70px 16px 0;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* ── PAGE ── */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── セクションタイトル ── */
+.section-title {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 18px; font-weight: 700;
+  color: var(--text-0);
+  margin: 20px 0 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+
+/* ── カード共通 ── */
+.card {
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--bdr-light);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: var(--shadow-s);
+  margin-bottom: 12px;
+}
+
+/* ── ステータスバッジ ── */
+.badge {
+  display: inline-block;
+  font-size: 11px; font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 100px;
+}
+.badge-pending  { background: var(--gold-bg);   color: var(--gold);   border: 1px solid var(--gold-bdr); }
+.badge-accepted { background: var(--green-bg);  color: var(--green);  border: 1px solid var(--green-bdr); }
+.badge-declined { background: var(--red-bg);    color: var(--red);    border: 1px solid var(--red-bdr); }
+
+/* ── スカウトカード ── */
+.scout-card {
+  background: rgba(255,255,255,0.85);
+  border: 1px solid var(--bdr-light);
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: var(--shadow-s);
+  margin-bottom: 12px;
+}
+.scout-card.new-scout { border-color: var(--sakura-4); }
+.scout-shop {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 16px; font-weight: 700;
+  color: var(--text-0);
+  margin-bottom: 4px;
+}
+.scout-meta {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin: 10px 0;
+}
+.scout-tag {
+  font-size: 12px;
+  background: var(--sakura-1);
+  border: 1px solid var(--bdr-light);
+  border-radius: 100px;
+  padding: 3px 10px;
+  color: var(--text-1);
+}
+.scout-msg {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.8;
+  background: var(--sakura-1);
+  border-radius: 12px;
+  padding: 12px;
+  margin: 10px 0;
+}
+.scout-actions {
+  display: flex; gap: 10px;
+  margin-top: 14px;
+}
+.btn-accept {
+  flex: 1;
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  color: #fff;
+  border: none; border-radius: 100px;
+  padding: 12px;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 14px; font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(22,163,74,0.3);
+  transition: transform 0.2s;
+}
+.btn-decline {
+  flex: 1;
+  background: #fff;
+  color: var(--red);
+  border: 1px solid var(--red-bdr);
+  border-radius: 100px;
+  padding: 12px;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 14px; font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.btn-accept:active, .btn-decline:active { transform: scale(0.97); }
+.scout-date {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 10px;
+  text-align: right;
+}
+
+/* ── プロフィール表示 ── */
+.prof-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--bdr-light);
+  font-size: 14px;
+}
+.prof-row:last-child { border-bottom: none; }
+.prof-label { color: var(--text-3); font-size: 12px; }
+.prof-value { color: var(--text-0); font-weight: 700; }
+
+/* ── 編集フォーム ── */
+.form-group { margin-bottom: 16px; }
+.form-label {
+  font-size: 12px; font-weight: 700;
+  color: var(--text-2);
+  display: block;
+  margin-bottom: 6px;
+}
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid var(--bdr-mid);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 14px;
+  color: var(--text-0);
+  outline: none;
+  -webkit-appearance: none;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--sakura-5);
+  box-shadow: 0 0 0 3px rgba(224,96,122,0.1);
+}
+.form-textarea { min-height: 80px; resize: none; line-height: 1.7; }
+
+/* チップ選択 */
+.chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  border: 1px solid var(--bdr-mid);
+  background: #fff;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.chip.selected {
+  background: var(--sakura-1);
+  border-color: var(--sakura-5);
+  color: var(--sakura-6);
+  font-weight: 700;
+}
+
+/* ── ブロック管理 ── */
+.block-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--bdr-light);
+}
+.block-item:last-child { border-bottom: none; }
+.block-name { font-size: 14px; color: var(--text-0); }
+.btn-block-toggle {
+  font-size: 12px; font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 100px;
+  border: none; cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-block-toggle.blocked {
+  background: var(--red-bg);
+  color: var(--red);
+  border: 1px solid var(--red-bdr);
+}
+.btn-block-toggle.unblocked {
+  background: var(--sakura-1);
+  color: var(--sakura-6);
+  border: 1px solid var(--bdr-mid);
+}
+
+/* ── 登録状況 ── */
+.status-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.status-tile {
+  background: rgba(255,255,255,0.85);
+  border: 1px solid var(--bdr-light);
+  border-radius: 16px;
+  padding: 16px;
+  text-align: center;
+}
+.status-tile .num {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 28px; font-weight: 700;
+  color: var(--sakura-6);
+  line-height: 1;
+}
+.status-tile .lbl {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 4px;
+}
+
+/* ── ボタン共通 ── */
+.btn-primary {
+  width: 100%;
+  background: linear-gradient(135deg, var(--sakura-5), var(--sakura-6));
+  color: #fff;
+  border: none; border-radius: 100px;
+  padding: 16px;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 15px; font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(192,64,96,0.3);
+  transition: transform 0.2s;
+  margin-top: 8px;
+}
+.btn-primary:active { transform: scale(0.98); }
+.btn-ghost {
+  width: 100%;
+  background: transparent;
+  color: var(--text-2);
+  border: 1px solid var(--bdr-mid);
+  border-radius: 100px;
+  padding: 14px;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+/* ── トースト ── */
+#toast {
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: rgba(28,20,24,0.9);
+  color: #fff;
+  font-size: 13px; font-weight: 700;
+  padding: 10px 20px;
+  border-radius: 100px;
+  opacity: 0;
+  transition: all 0.3s var(--ease-out);
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 999;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── 空状態 ── */
+.empty {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--text-3);
+}
+.empty-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-text { font-size: 14px; line-height: 1.8; }
+
+/* ── モーダル ── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(26,12,16,0.5);
+  display: none; align-items: flex-end;
+  backdrop-filter: blur(4px);
+}
+.modal-overlay.active { display: flex; }
+.modal-sheet {
+  width: 100%; max-height: 85vh;
+  background: #fffbfc;
+  border-radius: 24px 24px 0 0;
+  padding: 24px 20px;
+  overflow-y: auto;
+}
+.modal-handle {
+  width: 40px; height: 4px;
+  background: var(--bdr-mid);
+  border-radius: 2px;
+  margin: 0 auto 20px;
+}
+.modal-title {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 18px; font-weight: 700;
+  color: var(--text-0);
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* アニメ */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeUp 0.4s var(--ease-out) both; }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="loading-logo">✦ Stellar</div>
+  <div class="loading-spinner"></div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">✦ Stellar</div>
+  <div class="nav-name" id="navName"></div>
+</nav>
+
+<!-- MAIN -->
+<main>
+
+  <!-- ① スカウト一覧 -->
+  <div class="page active" id="pageScout">
+    <div class="section-title">💌 スカウト一覧</div>
+    <div id="scoutList"></div>
+  </div>
+
+  <!-- ② プロフィール -->
+  <div class="page" id="pageProfile">
+    <div class="section-title">👤 プロフィール</div>
+    <div class="card" id="profileView"></div>
+    <button class="btn-primary" onclick="openEditModal()">✏️ プロフィールを編集する</button>
+  </div>
+
+  <!-- ③ ブロック管理 -->
+  <div class="page" id="pageBlock">
+    <div class="section-title">🛡️ ブロック店舗の管理</div>
+    <div class="card">
+      <p style="font-size:13px;color:var(--text-2);margin-bottom:16px;line-height:1.8;">
+        ブロックした店舗からはプロフィールが見えません。いつでも変更できます。
+      </p>
+      <div id="blockList"></div>
+    </div>
+    <button class="btn-primary" onclick="saveBlock()">変更を保存する</button>
+  </div>
+
+  <!-- ④ 登録状況 -->
+  <div class="page" id="pageStatus">
+    <div class="section-title">📊 登録状況</div>
+    <div class="status-grid" id="statusGrid"></div>
+    <div class="card" style="margin-top:12px;" id="statusDetail"></div>
+    <button class="btn-ghost" onclick="openWithdraw()">退会・データ削除はこちら</button>
+  </div>
+
+</main>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <div class="tab-item active" id="tab-scout" onclick="switchTab('scout')">
+    <div class="tab-icon">💌</div>
+    <div>スカウト</div>
+  </div>
+  <div class="tab-item" id="tab-profile" onclick="switchTab('profile')">
+    <div class="tab-icon">👤</div>
+    <div>プロフィール</div>
+  </div>
+  <div class="tab-item" id="tab-block" onclick="switchTab('block')">
+    <div class="tab-icon">🛡️</div>
+    <div>ブロック</div>
+  </div>
+  <div class="tab-item" id="tab-status" onclick="switchTab('status')">
+    <div class="tab-icon">📊</div>
+    <div>状況</div>
+  </div>
+</div>
+
+<!-- トースト -->
+<div id="toast"></div>
+
+<!-- プロフィール編集モーダル -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">プロフィールを編集</div>
+
+    <div class="form-group">
+      <label class="form-label">ニックネーム</label>
+      <input type="text" class="form-input" id="editNickname" maxlength="20">
+    </div>
+    <div class="form-group">
+      <label class="form-label">身長 (cm)</label>
+      <input type="number" class="form-input" id="editHeight" min="140" max="185">
+    </div>
+    <div class="form-group">
+      <label class="form-label">体型</label>
+      <select class="form-select" id="editBodyType">
+        <option value="">選択してください</option>
+        <option value="スリム">スリム</option>
+        <option value="普通">普通</option>
+        <option value="グラマー">グラマー</option>
+        <option value="ぽっちゃり">ぽっちゃり</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">雰囲気（複数選択可）</label>
+      <div class="chip-group" id="editAura">
+        <div class="chip" data-val="清楚系">清楚系</div>
+        <div class="chip" data-val="ギャル系">ギャル系</div>
+        <div class="chip" data-val="癒し系">癒し系</div>
+        <div class="chip" data-val="クール系">クール系</div>
+        <div class="chip" data-val="元気系">元気系</div>
+        <div class="chip" data-val="お姉さん系">お姉さん系</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">希望時給 (円)</label>
+      <input type="number" class="form-input" id="editMinWage" min="1000" max="10000" step="100">
+    </div>
+    <div class="form-group">
+      <label class="form-label">希望勤務日数</label>
+      <select class="form-select" id="editWorkDays">
+        <option value="">選択してください</option>
+        <option value="週1〜2日">週1〜2日</option>
+        <option value="週3〜4日">週3〜4日</option>
+        <option value="週5日以上">週5日以上</option>
+        <option value="応相談">応相談</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">送迎</label>
+      <select class="form-select" id="editSend">
+        <option value="必要">必要</option>
+        <option value="あれば嬉しい">あれば嬉しい</option>
+        <option value="不要">不要</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">自己PR</label>
+      <textarea class="form-textarea" id="editSelfPR" maxlength="200" placeholder="自己PRを入力（任意）"></textarea>
+    </div>
+
+    <button class="btn-primary" onclick="saveProfile()">保存する</button>
+    <button class="btn-ghost" onclick="closeEditModal()">キャンセル</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════
+const CONFIG = {
+  liffId: '2009433766-C3Nonn6Z',
+  firebase: {
+    apiKey: 'AIzaSyAZmmtI-BCneCuO6urLjBbh-5tph0KxcTM',
+    authDomain: 'stellar-takamatsu.firebaseapp.com',
+    projectId: 'stellar-takamatsu',
+    storageBucket: 'stellar-takamatsu.firebasestorage.app',
+    messagingSenderId: '664201750972',
+    appId: '1:664201750972:web:f16e2d5c8fc3f8256e23b9'
+  },
+  shops: [
+    { id: 'shop_001', name: 'Club Stella' },
+    { id: 'shop_002', name: 'Lounge Luna' },
+    { id: 'shop_003', name: 'スナック 桜' },
+    { id: 'shop_004', name: 'キャバクラ 月夜' },
+    { id: 'shop_005', name: 'Lounge Crown' },
+    { id: 'shop_006', name: "Club D'or" },
+    { id: 'shop_007', name: 'スナック 蛍' },
+    { id: 'shop_008', name: 'Bar Noir' },
+    { id: 'shop_009', name: 'Lounge Rose' },
+    { id: 'shop_010', name: 'Club Sapphire' },
+    { id: 'shop_011', name: 'スナック 梅' },
+    { id: 'shop_012', name: 'キャバクラ 星空' }
+  ]
+};
+
+// ══════════════════════════════════════
+// STATE
+// ══════════════════════════════════════
+let db = null;
+let lineUserId = null;
+let userData = null;
+let scouts = [];
+let blockedIds = [];
+
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+firebase.initializeApp(CONFIG.firebase);
+db = firebase.firestore();
+
+async function init() {
+  try {
+    await liff.init({ liffId: CONFIG.liffId });
+    if (!liff.isLoggedIn()) {
+      liff.login({ redirectUri: window.location.href });
+      return;
+    }
+    const profile = await liff.getProfile();
+    lineUserId = profile.userId;
+    document.getElementById('navName').textContent = profile.displayName;
+
+    await loadUserData();
+    await loadScouts();
+    renderAll();
+    document.getElementById('loading').style.display = 'none';
+
+  } catch (e) {
+    console.error(e);
+    // デモモード
+    lineUserId = 'demo_user';
+    document.getElementById('navName').textContent = 'デモユーザー';
+    userData = getDemoUser();
+    scouts = getDemoScouts();
+    blockedIds = [];
+    renderAll();
+    document.getElementById('loading').style.display = 'none';
+  }
+}
+
+// ══════════════════════════════════════
+// DATA LOAD
+// ══════════════════════════════════════
+async function loadUserData() {
+  const snap = await db.collection('users').doc(lineUserId).get();
+  if (!snap.exists) {
+    window.location.href = 'index.html';
+    return;
+  }
+  userData = snap.data();
+  blockedIds = [...(userData.blockedShopIds || [])];
+}
+
+async function loadScouts() {
+  const snap = await db.collection('scouts')
+    .where('targetUserId', '==', lineUserId)
+    .orderBy('sentAt', 'desc')
+    .get();
+  scouts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+// ══════════════════════════════════════
+// RENDER ALL
+// ══════════════════════════════════════
+function renderAll() {
+  renderScouts();
+  renderProfile();
+  renderBlock();
+  renderStatus();
+}
+
+// ── スカウト一覧 ──
+function renderScouts() {
+  const el = document.getElementById('scoutList');
+  if (!scouts.length) {
+    el.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">💌</div>
+        <div class="empty-text">まだスカウトが届いていません。<br>お店からのスカウトをお待ちください。</div>
+      </div>`;
+    return;
+  }
+
+  el.innerHTML = scouts.map(s => {
+    const date = s.sentAt?.toDate ? s.sentAt.toDate().toLocaleDateString('ja-JP') : '---';
+    const statusBadge = {
+      pending:  '<span class="badge badge-pending">返答待ち</span>',
+      accepted: '<span class="badge badge-accepted">✓ 承諾済み</span>',
+      declined: '<span class="badge badge-declined">辞退済み</span>'
+    }[s.status] || '';
+
+    const actions = s.status === 'pending' ? `
+      <div class="scout-actions">
+        <button class="btn-accept" onclick="respondScout('${s.id}','accepted')">承諾する</button>
+        <button class="btn-decline" onclick="respondScout('${s.id}','declined')">辞退する</button>
+      </div>` : '';
+
+    return `
+      <div class="scout-card ${s.status === 'pending' ? 'new-scout' : ''} fade-in">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div class="scout-shop">${esc(s.shopName || '不明')}</div>
+          ${statusBadge}
+        </div>
+        <div class="scout-meta">
+          ${s.offerHourly ? `<span class="scout-tag">💴 時給 ${s.offerHourly.toLocaleString()}円</span>` : ''}
+          ${s.backRate    ? `<span class="scout-tag">💰 バック ${s.backRate}%</span>` : ''}
+          ${s.transport   ? `<span class="scout-tag">🚗 送迎 ${s.transport}</span>` : ''}
+          ${s.bottleBack  ? `<span class="scout-tag">🍾 ボトルバック ${s.bottleBack}円</span>` : ''}
+        </div>
+        ${s.message ? `<div class="scout-msg">${esc(s.message)}</div>` : ''}
+        ${actions}
+        <div class="scout-date">${date}</div>
+      </div>`;
+  }).join('');
+}
+
+// ── スカウト承諾/辞退 ──
+async function respondScout(scoutId, status) {
+  const label = status === 'accepted' ? '承諾' : '辞退';
+  if (!confirm(`このスカウトを${label}しますか？`)) return;
+
+  // 承諾上限チェック（3件）
+  if (status === 'accepted') {
+    const acceptedCount = scouts.filter(s => s.status === 'accepted').length;
+    if (acceptedCount >= 3) {
+      showToast('同時承諾は3件までです');
+      return;
+    }
+  }
+
+  try {
+    await db.collection('scouts').doc(scoutId).update({
+      status,
+      respondedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    const idx = scouts.findIndex(s => s.id === scoutId);
+    if (idx !== -1) scouts[idx].status = status;
+    renderScouts();
+    renderStatus();
+    showToast(`スカウトを${label}しました`);
+  } catch (e) {
+    showToast('エラーが発生しました');
+  }
+}
+
+// ── プロフィール表示 ──
+function renderProfile() {
+  if (!userData) return;
+  const u = userData;
+  const aura = Array.isArray(u.aura) ? u.aura.join('・') : (u.aura || '---');
+  const jobTypes = Array.isArray(u.jobTypes) ? u.jobTypes.join('・') : (u.jobTypes || '---');
+  const birth = u.birth ? `${u.birth.year}年${u.birth.month}月${u.birth.day}日` : '---';
+
+  document.getElementById('profileView').innerHTML = `
+    <div class="prof-row"><span class="prof-label">ニックネーム</span><span class="prof-value">${esc(u.nickname||'---')}</span></div>
+    <div class="prof-row"><span class="prof-label">生年月日</span><span class="prof-value">${birth}</span></div>
+    <div class="prof-row"><span class="prof-label">身長</span><span class="prof-value">${u.height ? u.height+'cm' : '---'}</span></div>
+    <div class="prof-row"><span class="prof-label">体型</span><span class="prof-value">${esc(u.bodyType||'---')}</span></div>
+    <div class="prof-row"><span class="prof-label">雰囲気</span><span class="prof-value">${esc(aura)}</span></div>
+    <div class="prof-row"><span class="prof-label">経験</span><span class="prof-value">${esc(u.exp||'---')}</span></div>
+    <div class="prof-row"><span class="prof-label">希望時給</span><span class="prof-value">${u.minWage ? u.minWage.toLocaleString()+'円〜' : '---'}</span></div>
+    <div class="prof-row"><span class="prof-label">勤務日数</span><span class="prof-value">${esc(u.workDays||'---')}</span></div>
+    <div class="prof-row"><span class="prof-label">送迎</span><span class="prof-value">${esc(u.send||'---')}</span></div>
+    <div class="prof-row"><span class="prof-label">希望業種</span><span class="prof-value">${esc(jobTypes)}</span></div>
+    ${u.selfPR ? `<div class="prof-row" style="flex-direction:column;gap:6px;"><span class="prof-label">自己PR</span><span class="prof-value" style="font-weight:400;font-size:13px;line-height:1.8;">${esc(u.selfPR)}</span></div>` : ''}
+  `;
+}
+
+// ── ブロック管理 ──
+function renderBlock() {
+  document.getElementById('blockList').innerHTML = CONFIG.shops.map(shop => {
+    const isBlocked = blockedIds.includes(shop.id);
+    return `
+      <div class="block-item">
+        <div class="block-name">${esc(shop.name)}</div>
+        <button
+          class="btn-block-toggle ${isBlocked ? 'blocked' : 'unblocked'}"
+          id="block-btn-${shop.id}"
+          onclick="toggleBlock('${shop.id}')">
+          ${isBlocked ? 'ブロック中' : 'ブロックしない'}
+        </button>
+      </div>`;
+  }).join('');
+}
+
+function toggleBlock(shopId) {
+  const idx = blockedIds.indexOf(shopId);
+  if (idx === -1) blockedIds.push(shopId);
+  else blockedIds.splice(idx, 1);
+
+  const btn = document.getElementById(`block-btn-${shopId}`);
+  const isNowBlocked = blockedIds.includes(shopId);
+  btn.className = `btn-block-toggle ${isNowBlocked ? 'blocked' : 'unblocked'}`;
+  btn.textContent = isNowBlocked ? 'ブロック中' : 'ブロックしない';
+}
+
+async function saveBlock() {
+  try {
+    const blockedShopNames = blockedIds.map(id => {
+      const shop = CONFIG.shops.find(s => s.id === id);
+      return shop ? shop.name : id;
+    });
+    await db.collection('users').doc(lineUserId).update({
+      blockedShopIds: blockedIds,
+      blockedShopNames,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    userData.blockedShopIds = [...blockedIds];
+    showToast('ブロック設定を保存しました');
+  } catch (e) {
+    showToast('エラーが発生しました');
+  }
+}
+
+// ── 登録状況 ──
+function renderStatus() {
+  const pending  = scouts.filter(s => s.status === 'pending').length;
+  const accepted = scouts.filter(s => s.status === 'accepted').length;
+  const declined = scouts.filter(s => s.status === 'declined').length;
+  const total    = scouts.length;
+
+  document.getElementById('statusGrid').innerHTML = `
+    <div class="status-tile"><div class="num">${total}</div><div class="lbl">スカウト合計</div></div>
+    <div class="status-tile"><div class="num" style="color:var(--gold)">${pending}</div><div class="lbl">返答待ち</div></div>
+    <div class="status-tile"><div class="num" style="color:var(--green)">${accepted}</div><div class="lbl">承諾済み</div></div>
+    <div class="status-tile"><div class="num" style="color:var(--red)">${declined}</div><div class="lbl">辞退済み</div></div>
+  `;
+
+  const regDate = userData?.registeredAt?.toDate
+    ? userData.registeredAt.toDate().toLocaleDateString('ja-JP')
+    : '---';
+
+  document.getElementById('statusDetail').innerHTML = `
+    <div class="prof-row"><span class="prof-label">登録状況</span><span class="badge badge-accepted">登録済み</span></div>
+    <div class="prof-row"><span class="prof-label">登録日</span><span class="prof-value">${regDate}</span></div>
+    <div class="prof-row"><span class="prof-label">ブロック中の店舗</span><span class="prof-value">${blockedIds.length}店舗</span></div>
+    <div class="prof-row"><span class="prof-label">同時承諾</span><span class="prof-value">${accepted} / 3件</span></div>
+  `;
+}
+
+// ══════════════════════════════════════
+// プロフィール編集
+// ══════════════════════════════════════
+function openEditModal() {
+  if (!userData) return;
+  document.getElementById('editNickname').value  = userData.nickname || '';
+  document.getElementById('editHeight').value    = userData.height || '';
+  document.getElementById('editBodyType').value  = userData.bodyType || '';
+  document.getElementById('editMinWage').value   = userData.minWage || '';
+  document.getElementById('editWorkDays').value  = userData.workDays || '';
+  document.getElementById('editSend').value      = userData.send || '';
+  document.getElementById('editSelfPR').value    = userData.selfPR || '';
+
+  // 雰囲気チップ
+  const aura = userData.aura || [];
+  document.querySelectorAll('#editAura .chip').forEach(c => {
+    c.classList.toggle('selected', aura.includes(c.dataset.val));
+    c.onclick = () => c.classList.toggle('selected');
+  });
+
+  document.getElementById('editModal').classList.add('active');
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').classList.remove('active');
+}
+
+async function saveProfile() {
+  const nickname = document.getElementById('editNickname').value.trim();
+  if (!nickname) { showToast('ニックネームを入力してください'); return; }
+
+  const aura = [...document.querySelectorAll('#editAura .chip.selected')].map(c => c.dataset.val);
+
+  const updates = {
+    nickname,
+    height:    document.getElementById('editHeight').value,
+    bodyType:  document.getElementById('editBodyType').value,
+    aura,
+    minWage:   parseInt(document.getElementById('editMinWage').value) || 0,
+    workDays:  document.getElementById('editWorkDays').value,
+    send:      document.getElementById('editSend').value,
+    selfPR:    document.getElementById('editSelfPR').value.trim(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  try {
+    await db.collection('users').doc(lineUserId).update(updates);
+    Object.assign(userData, updates);
+    renderProfile();
+    closeEditModal();
+    showToast('プロフィールを更新しました');
+  } catch (e) {
+    showToast('エラーが発生しました');
+  }
+}
+
+// ══════════════════════════════════════
+// UI UTILS
+// ══════════════════════════════════════
+function switchTab(tab) {
+  ['scout','profile','block','status'].forEach(t => {
+    document.getElementById(`page${t.charAt(0).toUpperCase()+t.slice(1)}`).classList.toggle('active', t === tab);
+    document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
+  });
+}
+
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function openWithdraw() {
+  if (confirm('退会・データ削除をご希望の場合は、公式LINEよりお申し付けください。')) {
+    const url = 'https://line.me/R/ti/p/@688gndvs';
+    try { if (liff.isInClient()) liff.openWindow({ url, external: false }); else window.open(url,'_blank'); }
+    catch(e) { window.open(url,'_blank'); }
+  }
+}
+
+// ══════════════════════════════════════
+// DEMO DATA
+// ══════════════════════════════════════
+function getDemoUser() {
+  return {
+    nickname: 'デモちゃん',
+    birth: { year: '2000', month: '4', day: '1' },
+    height: '160',
+    bodyType: 'スリム',
+    aura: ['清楚系', '癒し系'],
+    exp: 'なし',
+    minWage: 3000,
+    workDays: '週3〜4日',
+    send: '必要',
+    jobTypes: ['キャバクラ', 'ラウンジ'],
+    selfPR: 'よろしくお願いします！',
+    blockedShopIds: [],
+    status: 'active',
+    registeredAt: { toDate: () => new Date() }
+  };
+}
+function getDemoScouts() {
+  return [
+    { id: 'demo1', shopName: 'Club Stella', offerHourly: 3500, backRate: 50, transport: 'あり', bottleBack: 500, message: 'アットホームなお店です。体入だけでもぜひ！', status: 'pending', sentAt: { toDate: () => new Date() } },
+    { id: 'demo2', shopName: 'Lounge Luna', offerHourly: 3000, backRate: 40, transport: 'あり', bottleBack: 0, message: '', status: 'accepted', sentAt: { toDate: () => new Date(Date.now() - 86400000) } },
+  ];
+}
+
+// START
+init();
+</script>
+</body>
+</html>
