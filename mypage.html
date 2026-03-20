@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="ja" style="color-scheme:light only">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Stellar — マイページ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700;800&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+:root {
+  --s0:#fffbfc;--s1:#fff0f3;--s2:#fddde6;--s3:#f9bfcc;
+  --s4:#f096aa;--s5:#e0607a;--s6:#c04060;
+  --gold:#b89240;--gold-l:#d4ae60;
+  --gold-bg:rgba(184,146,64,.08);--gold-bdr:rgba(184,146,64,.25);
+  --green:#16a34a;--green-bg:rgba(22,163,74,.08);--green-bdr:rgba(22,163,74,.2);
+  --red:#dc2626;--red-bg:rgba(220,38,38,.07);--red-bdr:rgba(220,38,38,.18);
+  --t0:#1a0c10;--t1:#3d1e28;--t2:#6b3a48;--t3:#9a6070;
+  --bl:rgba(224,96,122,.13);--bm:rgba(224,96,122,.22);
+  --sh:0 4px 24px rgba(200,64,96,.10);
+  --ease:cubic-bezier(0.16,1,0.3,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:-webkit-fill-available;-webkit-font-smoothing:antialiased}
+body{
+  background:#fffbfc!important;color:#1a0c10!important;color-scheme:light only;
+  font-family:'Zen Maru Gothic',sans-serif;font-size:15px;line-height:1.75;
+  overflow-x:hidden;min-height:100vh;min-height:-webkit-fill-available;
+  padding-bottom:max(76px,calc(76px + env(safe-area-inset-bottom,0px)));
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 55% at 0% 0%,rgba(249,191,204,.28) 0%,transparent 55%),
+    radial-gradient(ellipse 70% 50% at 100% 100%,rgba(253,221,230,.22) 0%,transparent 55%);
+}
+body::after{
+  content:'';position:fixed;top:0;left:0;right:0;height:3px;z-index:300;
+  background:linear-gradient(90deg,var(--s3),var(--s5),var(--s6),var(--s4),var(--s3));
+}
+#loading{
+  position:fixed;inset:0;z-index:400;background:#fffbfc;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;
+}
+.ld-logo{font-family:'Shippori Mincho',serif;font-size:32px;font-weight:800;color:var(--s6);letter-spacing:.06em;}
+.ld-sub{font-size:12px;color:var(--t3);}
+.ld-spin{width:32px;height:32px;border:2px solid var(--bl);border-top-color:var(--s5);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:200;height:56px;
+  display:flex;align-items:center;justify-content:space-between;padding:0 20px;
+  background:rgba(255,251,252,.92);backdrop-filter:blur(24px) saturate(160%);
+  -webkit-backdrop-filter:blur(24px) saturate(160%);border-bottom:1px solid var(--bl);
+}
+.nav-logo{font-family:'Shippori Mincho',serif;font-size:20px;font-weight:700;color:var(--s6);letter-spacing:.05em;}
+.nav-user{display:flex;align-items:center;gap:8px;}
+.nav-avatar{
+  width:30px;height:30px;border-radius:50%;
+  background:linear-gradient(135deg,var(--s3),var(--s5));
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;color:#fff;font-weight:700;
+}
+.nav-name{font-size:12px;color:var(--t2);font-weight:700;}
+.tabbar{
+  position:fixed;bottom:0;left:0;right:0;z-index:200;
+  background:rgba(255,251,252,.96);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-top:1px solid var(--bl);display:flex;align-items:stretch;
+  height:max(60px,calc(60px + env(safe-area-inset-bottom,0px)));
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+.tab{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent;
+  position:relative;
+}
+.tab::after{
+  content:'';position:absolute;top:0;left:20%;right:20%;height:2px;
+  background:var(--s5);border-radius:0 0 2px 2px;opacity:0;transition:opacity .2s;
+}
+.tab.active::after{opacity:1;}
+.tab-icon{font-size:22px;line-height:1;transition:transform .2s var(--ease);}
+.tab.active .tab-icon{transform:scale(1.15);}
+.tab-lbl{font-size:10px;font-weight:700;color:var(--t3);transition:color .2s;}
+.tab.active .tab-lbl{color:var(--s6);}
+main{position:relative;z-index:2;padding:72px 16px 0;max-width:480px;margin:0 auto;}
+.page{display:none;animation:fadeUp .35s var(--ease) both;}
+.page.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.page-head{padding:20px 4px 16px;}
+.page-head h2{font-family:'Shippori Mincho',serif;font-size:22px;font-weight:700;color:var(--t0);display:flex;align-items:center;gap:10px;}
+.page-head p{font-size:13px;color:var(--t3);margin-top:4px;}
+.card{
+  background:rgba(255,255,255,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid var(--bl);border-radius:20px;box-shadow:var(--sh);overflow:hidden;margin-bottom:14px;
+}
+.card-head{padding:16px 20px 14px;border-bottom:1px solid var(--bl);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-family:'Shippori Mincho',serif;font-size:15px;font-weight:700;color:var(--t1);}
+.card-body{padding:4px 20px;}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:4px 12px;border-radius:100px;}
+.badge-pending{background:var(--gold-bg);color:var(--gold);border:1px solid var(--gold-bdr);}
+.badge-accepted{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bdr);}
+.badge-declined{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bdr);}
+.scout-card{
+  background:rgba(255,255,255,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid var(--bl);border-radius:20px;box-shadow:var(--sh);margin-bottom:14px;overflow:hidden;
+}
+.scout-card.pending{border-color:var(--s3);box-shadow:0 4px 24px rgba(200,64,96,.14);}
+.scout-card-head{
+  padding:18px 20px 14px;
+  background:linear-gradient(135deg,rgba(255,240,243,.6),rgba(255,251,252,.3));
+  border-bottom:1px solid var(--bl);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+}
+.scout-shop{font-family:'Shippori Mincho',serif;font-size:18px;font-weight:700;color:var(--t0);}
+.scout-date-small{font-size:11px;color:var(--t3);margin-top:2px;}
+.scout-body{padding:16px 20px;}
+.scout-conditions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.cond-item{background:var(--s1);border:1px solid var(--bl);border-radius:12px;padding:10px 12px;}
+.cond-label{font-size:10px;color:var(--t3);font-weight:700;margin-bottom:2px;}
+.cond-value{font-size:15px;font-weight:700;color:var(--t0);}
+.scout-msg{font-size:13px;color:var(--t2);line-height:1.85;background:var(--s1);border-left:3px solid var(--s4);border-radius:0 12px 12px 0;padding:12px 14px;margin-bottom:16px;}
+.scout-actions{display:flex;gap:10px;}
+.btn-accept{
+  flex:1;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;
+  border:none;border-radius:100px;padding:14px;
+  font-family:'Zen Maru Gothic',sans-serif;font-size:14px;font-weight:700;
+  cursor:pointer;box-shadow:0 4px 16px rgba(22,163,74,.3);
+  transition:transform .2s var(--ease);
+}
+.btn-accept:active{transform:scale(.97);}
+.btn-decline{
+  flex:1;background:#fff;color:var(--red);border:1.5px solid var(--red-bdr);
+  border-radius:100px;padding:14px;
+  font-family:'Zen Maru Gothic',sans-serif;font-size:14px;font-weight:700;
+  cursor:pointer;transition:transform .2s,background .15s;
+}
+.btn-decline:active{transform:scale(.97);background:var(--red-bg);}
+.prof-hero{
+  background:linear-gradient(135deg,var(--s6),var(--s5));border-radius:20px;
+  padding:24px;margin-bottom:14px;display:flex;align-items:center;gap:16px;
+  box-shadow:0 8px 32px rgba(192,64,96,.25);
+}
+.prof-avatar{
+  width:64px;height:64px;border-radius:50%;
+  background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;
+  font-size:28px;flex-shrink:0;border:2px solid rgba(255,255,255,.4);
+}
+.prof-nickname{font-family:'Shippori Mincho',serif;font-size:22px;font-weight:700;color:#fff;line-height:1.2;}
+.prof-sub{font-size:12px;color:rgba(255,255,255,.75);margin-top:4px;}
+.prof-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.prof-tag{font-size:11px;font-weight:700;background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:100px;padding:3px 10px;}
+.prof-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--bl);gap:12px;}
+.prof-row:last-child{border-bottom:none;}
+.prof-lbl{font-size:12px;color:var(--t3);font-weight:700;flex-shrink:0;}
+.prof-val{font-size:14px;color:var(--t0);font-weight:700;text-align:right;}
+.block-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--bl);}
+.block-row:last-child{border-bottom:none;}
+.block-name{font-size:14px;color:var(--t0);}
+.btn-toggle{font-size:12px;font-weight:700;padding:6px 14px;border-radius:100px;border:none;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent;}
+.btn-toggle.on{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bdr);}
+.btn-toggle.off{background:var(--s1);color:var(--t2);border:1px solid var(--bl);}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.stat-tile{background:rgba(255,255,255,.88);border:1px solid var(--bl);border-radius:18px;padding:18px 16px;text-align:center;box-shadow:var(--sh);}
+.stat-num{font-family:'Shippori Mincho',serif;font-size:36px;font-weight:800;color:var(--s6);line-height:1;}
+.stat-lbl{font-size:11px;color:var(--t3);margin-top:6px;font-weight:700;}
+.btn-primary{
+  width:100%;background:linear-gradient(135deg,var(--s5),var(--s6));color:#fff;
+  border:none;border-radius:100px;padding:17px;
+  font-family:'Zen Maru Gothic',sans-serif;font-size:15px;font-weight:700;
+  cursor:pointer;box-shadow:0 8px 24px rgba(192,64,96,.3);
+  transition:transform .2s var(--ease);margin-bottom:10px;letter-spacing:.03em;
+}
+.btn-primary:active{transform:scale(.98);}
+.btn-ghost{
+  width:100%;background:transparent;color:var(--t2);border:1.5px solid var(--bm);
+  border-radius:100px;padding:15px;font-family:'Zen Maru Gothic',sans-serif;
+  font-size:14px;cursor:pointer;margin-bottom:10px;transition:background .15s;
+}
+.btn-ghost:active{background:var(--s1);}
+.empty{text-align:center;padding:56px 20px;}
+.empty-icon{font-size:48px;margin-bottom:16px;opacity:.6;}
+.empty-title{font-family:'Shippori Mincho',serif;font-size:17px;font-weight:700;color:var(--t1);margin-bottom:8px;}
+.empty-text{font-size:13px;color:var(--t3);line-height:1.85;}
+.modal{position:fixed;inset:0;z-index:300;background:rgba(26,12,16,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:flex-end;}
+.modal.active{display:flex;}
+.modal-sheet{
+  width:100%;max-height:90vh;background:#fffbfc;border-radius:28px 28px 0 0;
+  padding:24px 20px max(24px,calc(24px + env(safe-area-inset-bottom,0px)));
+  overflow-y:auto;animation:slideUp .35s var(--ease) both;
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:48px;height:5px;background:var(--bm);border-radius:3px;margin:0 auto 24px;}
+.modal-title{font-family:'Shippori Mincho',serif;font-size:20px;font-weight:700;color:var(--t0);text-align:center;margin-bottom:24px;}
+.form-grp{margin-bottom:18px;}
+.form-lbl{font-size:12px;font-weight:700;color:var(--t2);display:block;margin-bottom:8px;}
+.form-input,.form-select,.form-textarea{
+  width:100%;background:rgba(255,255,255,.9);border:1.5px solid var(--bm);border-radius:14px;
+  padding:13px 15px;font-family:'Zen Maru Gothic',sans-serif;font-size:14px;color:var(--t0);
+  outline:none;-webkit-appearance:none;transition:border-color .15s,box-shadow .15s;
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--s5);box-shadow:0 0 0 3px rgba(224,96,122,.1);}
+.form-textarea{min-height:90px;resize:none;line-height:1.7;}
+.chip-group{display:flex;flex-wrap:wrap;gap:8px;}
+.chip{font-size:13px;padding:7px 16px;border-radius:100px;border:1.5px solid var(--bm);background:#fff;color:var(--t2);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent;}
+.chip.on{background:var(--s1);border-color:var(--s5);color:var(--s6);font-weight:700;}
+#toast{
+  position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(16px);
+  background:rgba(28,20,24,.92);color:#fff;font-size:13px;font-weight:700;
+  padding:11px 22px;border-radius:100px;opacity:0;
+  transition:all .3s var(--ease);pointer-events:none;white-space:nowrap;z-index:500;
+  box-shadow:0 4px 20px rgba(0,0,0,.2);
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--bm),transparent);margin:8px 0 20px;}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="ld-logo">✦ Stellar</div>
+  <div class="ld-spin"></div>
+  <div class="ld-sub">マイページを読み込み中</div>
+</div>
+
+<nav>
+  <div class="nav-logo">✦ Stellar</div>
+  <div class="nav-user">
+    <div class="nav-avatar" id="navAvatar">S</div>
+    <div class="nav-name" id="navName"></div>
+  </div>
+</nav>
+
+<main>
+  <div class="page active" id="pageScout">
+    <div class="page-head">
+      <h2>💌 スカウト一覧</h2>
+      <p id="scoutSub">読み込み中...</p>
+    </div>
+    <div id="scoutList"></div>
+  </div>
+
+  <div class="page" id="pageProfile">
+    <div class="page-head"><h2>👤 プロフィール</h2></div>
+    <div id="profHero"></div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">希望条件</div></div>
+      <div class="card-body"><div id="profRows"></div></div>
+    </div>
+    <button class="btn-primary" onclick="openEdit()">✏️ プロフィールを編集する</button>
+  </div>
+
+  <div class="page" id="pageBlock">
+    <div class="page-head">
+      <h2>🛡️ ブロック管理</h2>
+      <p>ブロックしたお店にはプロフィールが見えません</p>
+    </div>
+    <div class="card">
+      <div class="card-body" id="blockList"></div>
+    </div>
+    <button class="btn-primary" onclick="saveBlock()">✓ 変更を保存する</button>
+  </div>
+
+  <div class="page" id="pageStatus">
+    <div class="page-head"><h2>📊 登録状況</h2></div>
+    <div class="stat-grid" id="statGrid"></div>
+    <div class="card">
+      <div class="card-body"><div id="statDetail"></div></div>
+    </div>
+    <div class="divider"></div>
+    <button class="btn-ghost" onclick="doWithdraw()">退会・データ削除はこちら</button>
+  </div>
+</main>
+
+<div class="tabbar">
+  <div class="tab active" id="tab-scout"   onclick="go('scout')">  <div class="tab-icon">💌</div><div class="tab-lbl">スカウト</div></div>
+  <div class="tab"        id="tab-profile" onclick="go('profile')"><div class="tab-icon">👤</div><div class="tab-lbl">プロフィール</div></div>
+  <div class="tab"        id="tab-block"   onclick="go('block')">  <div class="tab-icon">🛡️</div><div class="tab-lbl">ブロック</div></div>
+  <div class="tab"        id="tab-status"  onclick="go('status')"> <div class="tab-icon">📊</div><div class="tab-lbl">状況</div></div>
+</div>
+
+<div id="toast"></div>
+
+<div class="modal" id="editModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">プロフィールを編集</div>
+    <div class="form-grp"><label class="form-lbl">ニックネーム</label><input class="form-input" id="eNick" type="text" maxlength="20"></div>
+    <div class="form-grp"><label class="form-lbl">身長 (cm)</label><input class="form-input" id="eHeight" type="number" min="140" max="185"></div>
+    <div class="form-grp">
+      <label class="form-lbl">体型</label>
+      <select class="form-select" id="eBody">
+        <option value="">選択してください</option>
+        <option value="スリム">スリム</option>
+        <option value="普通">普通</option>
+        <option value="グラマー">グラマー</option>
+        <option value="ぽっちゃり">ぽっちゃり</option>
+      </select>
+    </div>
+    <div class="form-grp">
+      <label class="form-lbl">雰囲気（複数選択可）</label>
+      <div class="chip-group" id="eAura">
+        <div class="chip" data-v="清楚系">清楚系</div>
+        <div class="chip" data-v="ギャル系">ギャル系</div>
+        <div class="chip" data-v="癒し系">癒し系</div>
+        <div class="chip" data-v="クール系">クール系</div>
+        <div class="chip" data-v="元気系">元気系</div>
+        <div class="chip" data-v="お姉さん系">お姉さん系</div>
+      </div>
+    </div>
+    <div class="form-grp"><label class="form-lbl">希望時給 (円)</label><input class="form-input" id="eWage" type="number" min="1000" max="10000" step="100"></div>
+    <div class="form-grp">
+      <label class="form-lbl">希望勤務日数</label>
+      <select class="form-select" id="eWorkDays">
+        <option value="">選択してください</option>
+        <option value="週1〜2日">週1〜2日</option>
+        <option value="週3〜4日">週3〜4日</option>
+        <option value="週5日以上">週5日以上</option>
+        <option value="応相談">応相談</option>
+      </select>
+    </div>
+    <div class="form-grp">
+      <label class="form-lbl">送迎</label>
+      <select class="form-select" id="eSend">
+        <option value="必要">必要</option>
+        <option value="あれば嬉しい">あれば嬉しい</option>
+        <option value="不要">不要</option>
+      </select>
+    </div>
+    <div class="form-grp"><label class="form-lbl">自己PR（任意）</label><textarea class="form-textarea" id="ePR" maxlength="200" placeholder="お店へのひとことなど"></textarea></div>
+    <button class="btn-primary" onclick="saveProfile()">保存する</button>
+    <button class="btn-ghost" onclick="closeEdit()">キャンセル</button>
+  </div>
+</div>
+
+<script>
+const CONFIG = {
+  liffId: '2009433766-C3Nonn6Z',
+  firebase: {
+    apiKey: 'AIzaSyAZmmtI-BCneCuO6urLjBbh-5tph0KxcTM',
+    authDomain: 'stellar-takamatsu.firebaseapp.com',
+    projectId: 'stellar-takamatsu',
+    storageBucket: 'stellar-takamatsu.firebasestorage.app',
+    messagingSenderId: '664201750972',
+    appId: '1:664201750972:web:f16e2d5c8fc3f8256e23b9'
+  },
+  shops: [
+    {id:'shop_001',name:'Club Stella'},{id:'shop_002',name:'Lounge Luna'},
+    {id:'shop_003',name:'スナック 桜'},{id:'shop_004',name:'キャバクラ 月夜'},
+    {id:'shop_005',name:'Lounge Crown'},{id:'shop_006',name:"Club D'or"},
+    {id:'shop_007',name:'スナック 蛍'},{id:'shop_008',name:'Bar Noir'},
+    {id:'shop_009',name:'Lounge Rose'},{id:'shop_010',name:'Club Sapphire'},
+    {id:'shop_011',name:'スナック 梅'},{id:'shop_012',name:'キャバクラ 星空'}
+  ]
+};
+
+let db,auth,lineUserId,userData,scouts=[],blockedIds=[];
+firebase.initializeApp(CONFIG.firebase);
+db=firebase.firestore(); auth=firebase.auth();
+
+async function init(){
+  try{
+    await auth.signInAnonymously();
+    await liff.init({liffId:CONFIG.liffId});
+    if(!liff.isLoggedIn()){liff.login({redirectUri:window.location.href});return;}
+    const p=await liff.getProfile();
+    lineUserId=p.userId;
+    const n=p.displayName||'';
+    document.getElementById('navName').textContent=n;
+    document.getElementById('navAvatar').textContent=n.charAt(0)||'S';
+    await loadUser();
+    await loadScouts();
+    renderAll();
+    document.getElementById('loading').style.display='none';
+  }catch(e){
+    console.error(e);
+    document.getElementById('loading').innerHTML=
+      `<div style="padding:24px;text-align:center;color:var(--s6);">
+        <div style="font-size:32px;margin-bottom:12px;">⚠️</div>
+        <div style="font-family:'Shippori Mincho',serif;font-size:18px;font-weight:700;margin-bottom:8px;">読み込みエラー</div>
+        <div style="font-size:13px;color:var(--t3);word-break:break-all;">${String(e)}</div>
+      </div>`;
+  }
+}
+
+async function loadUser(){
+  const snap=await db.collection('users').doc(lineUserId).get();
+  if(!snap.exists){window.location.href='index.html';return;}
+  userData=snap.data();
+  blockedIds=[...(userData.blockedShopIds||[])];
+}
+
+async function loadScouts(){
+  try{
+    const snap=await db.collection('scouts')
+      .where('targetUserId','==',lineUserId)
+      .orderBy('sentAt','desc').get();
+    scouts=snap.docs.map(d=>({id:d.id,...d.data()}));
+  }catch(e){scouts=[];console.warn(e);}
+}
+
+function renderAll(){renderScouts();renderProfile();renderBlock();renderStatus();}
+
+function renderScouts(){
+  const pending=scouts.filter(s=>s.status==='pending').length;
+  document.getElementById('scoutSub').textContent=
+    scouts.length?`${scouts.length}件 • 返答待ち ${pending}件`:'届いたスカウトがここに表示されます';
+  const el=document.getElementById('scoutList');
+  if(!scouts.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">💌</div><div class="empty-title">まだスカウトがありません</div><div class="empty-text">条件に合ったお店からスカウトが<br>届いたらLINEでお知らせします</div></div>`;
+    return;
+  }
+  el.innerHTML=scouts.map(s=>{
+    const date=s.sentAt?.toDate?s.sentAt.toDate().toLocaleDateString('ja-JP',{month:'long',day:'numeric'}):'';
+    const sb={
+      pending:`<span class="badge badge-pending">⏳ 返答待ち</span>`,
+      accepted:`<span class="badge badge-accepted">✓ 承諾済み</span>`,
+      declined:`<span class="badge badge-declined">✕ 辞退済み</span>`
+    }[s.status]||'';
+    const actions=s.status==='pending'?`
+      <div class="scout-actions">
+        <button class="btn-accept" onclick="respond('${s.id}','accepted')">承諾する</button>
+        <button class="btn-decline" onclick="respond('${s.id}','declined')">辞退する</button>
+      </div>`:'';
+    const conds=`<div class="scout-conditions">
+      ${s.offerHourly?`<div class="cond-item"><div class="cond-label">💴 時給</div><div class="cond-value">${s.offerHourly.toLocaleString()}円</div></div>`:''}
+      ${s.backRate?`<div class="cond-item"><div class="cond-label">💰 バック率</div><div class="cond-value">${s.backRate}%</div></div>`:''}
+      ${s.transport?`<div class="cond-item"><div class="cond-label">🚗 送迎</div><div class="cond-value">${esc(s.transport)}</div></div>`:''}
+      ${s.bottleBack?`<div class="cond-item"><div class="cond-label">🍾 ボトルバック</div><div class="cond-value">${Number(s.bottleBack).toLocaleString()}円</div></div>`:''}
+    </div>`;
+    return `<div class="scout-card ${s.status==='pending'?'pending':''}">
+      <div class="scout-card-head">
+        <div><div class="scout-shop">${esc(s.shopName||'不明')}</div><div class="scout-date-small">${date}</div></div>
+        ${sb}
+      </div>
+      <div class="scout-body">
+        ${conds}
+        ${s.message?`<div class="scout-msg">${esc(s.message)}</div>`:''}
+        ${actions}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderProfile(){
+  if(!userData)return;
+  const u=userData;
+  const aura=Array.isArray(u.aura)?u.aura:[];
+  const birth=u.birth?`${u.birth.year}年${u.birth.month}月${u.birth.day}日`:'---';
+  document.getElementById('profHero').innerHTML=`
+    <div class="prof-hero">
+      <div class="prof-avatar">✨</div>
+      <div>
+        <div class="prof-nickname">${esc(u.nickname||'---')}</div>
+        <div class="prof-sub">${birth} • ${esc(u.bodyType||'---')} ${u.height?u.height+'cm':''}</div>
+        <div class="prof-tags">
+          ${aura.map(a=>`<span class="prof-tag">${esc(a)}</span>`).join('')}
+          ${u.exp?`<span class="prof-tag">${esc(u.exp)}</span>`:''}
+        </div>
+      </div>
+    </div>`;
+  const jt=Array.isArray(u.jobTypes)?u.jobTypes.join('・'):(u.jobTypes||'---');
+  document.getElementById('profRows').innerHTML=`
+    <div class="prof-row"><span class="prof-lbl">希望時給</span><span class="prof-val">${u.minWage?u.minWage.toLocaleString()+'円〜':'---'}</span></div>
+    <div class="prof-row"><span class="prof-lbl">勤務日数</span><span class="prof-val">${esc(u.workDays||'---')}</span></div>
+    <div class="prof-row"><span class="prof-lbl">送迎</span><span class="prof-val">${esc(u.send||'---')}</span></div>
+    <div class="prof-row"><span class="prof-lbl">希望業種</span><span class="prof-val">${esc(jt)}</span></div>
+    ${u.selfPR?`<div class="prof-row" style="flex-direction:column;align-items:flex-start;gap:6px;"><span class="prof-lbl">自己PR</span><span class="prof-val" style="font-weight:400;font-size:13px;line-height:1.8;text-align:left;">${esc(u.selfPR)}</span></div>`:''}
+  `;
+}
+
+function renderBlock(){
+  document.getElementById('blockList').innerHTML=CONFIG.shops.map(s=>{
+    const b=blockedIds.includes(s.id);
+    return `<div class="block-row">
+      <div class="block-name">${esc(s.name)}</div>
+      <button class="btn-toggle ${b?'on':'off'}" id="bt-${s.id}" onclick="toggleBlock('${s.id}')">
+        ${b?'ブロック中':'ブロックしない'}
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function renderStatus(){
+  const total=scouts.length;
+  const pending=scouts.filter(s=>s.status==='pending').length;
+  const accepted=scouts.filter(s=>s.status==='accepted').length;
+  const declined=scouts.filter(s=>s.status==='declined').length;
+  document.getElementById('statGrid').innerHTML=`
+    <div class="stat-tile"><div class="stat-num">${total}</div><div class="stat-lbl">スカウト合計</div></div>
+    <div class="stat-tile"><div class="stat-num" style="color:var(--gold)">${pending}</div><div class="stat-lbl">返答待ち</div></div>
+    <div class="stat-tile"><div class="stat-num" style="color:var(--green)">${accepted}</div><div class="stat-lbl">承諾済み</div></div>
+    <div class="stat-tile"><div class="stat-num" style="color:var(--red)">${declined}</div><div class="stat-lbl">辞退済み</div></div>
+  `;
+  const rd=userData?.registeredAt?.toDate?userData.registeredAt.toDate().toLocaleDateString('ja-JP'):'---';
+  document.getElementById('statDetail').innerHTML=`
+    <div class="prof-row"><span class="prof-lbl">登録状況</span><span class="badge badge-accepted">✓ 登録済み</span></div>
+    <div class="prof-row"><span class="prof-lbl">登録日</span><span class="prof-val">${rd}</span></div>
+    <div class="prof-row"><span class="prof-lbl">ブロック中</span><span class="prof-val">${blockedIds.length}店舗</span></div>
+    <div class="prof-row"><span class="prof-lbl">同時承諾</span><span class="prof-val">${accepted} / 3件</span></div>
+  `;
+}
+
+async function respond(id,status){
+  const label=status==='accepted'?'承諾':'辞退';
+  if(!confirm(`このスカウトを${label}しますか？`))return;
+  if(status==='accepted'&&scouts.filter(s=>s.status==='accepted').length>=3){toast('同時承諾は3件までです');return;}
+  try{
+    await db.collection('scouts').doc(id).update({status,respondedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    const i=scouts.findIndex(s=>s.id===id);
+    if(i!==-1)scouts[i].status=status;
+    renderScouts();renderStatus();
+    toast(`スカウトを${label}しました`);
+  }catch(e){toast('エラー: '+e.code);}
+}
+
+function toggleBlock(id){
+  const i=blockedIds.indexOf(id);
+  if(i===-1)blockedIds.push(id);else blockedIds.splice(i,1);
+  const btn=document.getElementById(`bt-${id}`);
+  const now=blockedIds.includes(id);
+  btn.className=`btn-toggle ${now?'on':'off'}`;
+  btn.textContent=now?'ブロック中':'ブロックしない';
+}
+
+async function saveBlock(){
+  try{
+    const names=blockedIds.map(id=>{const s=CONFIG.shops.find(s=>s.id===id);return s?s.name:id;});
+    await db.collection('users').doc(lineUserId).update({
+      blockedShopIds:blockedIds,blockedShopNames:names,
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    toast('ブロック設定を保存しました');
+  }catch(e){toast('エラー: '+e.code);}
+}
+
+function openEdit(){
+  if(!userData)return;
+  const u=userData;
+  document.getElementById('eNick').value   =u.nickname||'';
+  document.getElementById('eHeight').value =u.height||'';
+  document.getElementById('eBody').value   =u.bodyType||'';
+  document.getElementById('eWage').value   =u.minWage||'';
+  document.getElementById('eWorkDays').value=u.workDays||'';
+  document.getElementById('eSend').value   =u.send||'';
+  document.getElementById('ePR').value     =u.selfPR||'';
+  const aura=Array.isArray(u.aura)?u.aura:[];
+  document.querySelectorAll('#eAura .chip').forEach(c=>{
+    c.classList.toggle('on',aura.includes(c.dataset.v));
+    c.onclick=()=>c.classList.toggle('on');
+  });
+  document.getElementById('editModal').classList.add('active');
+}
+function closeEdit(){document.getElementById('editModal').classList.remove('active');}
+
+async function saveProfile(){
+  const nick=document.getElementById('eNick').value.trim();
+  if(!nick){toast('ニックネームを入力してください');return;}
+  const aura=[...document.querySelectorAll('#eAura .chip.on')].map(c=>c.dataset.v);
+  const updates={
+    nickname:nick,
+    height:document.getElementById('eHeight').value,
+    bodyType:document.getElementById('eBody').value,
+    aura,
+    minWage:parseInt(document.getElementById('eWage').value)||0,
+    workDays:document.getElementById('eWorkDays').value,
+    send:document.getElementById('eSend').value,
+    selfPR:document.getElementById('ePR').value.trim(),
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+  };
+  try{
+    await db.collection('users').doc(lineUserId).update(updates);
+    Object.assign(userData,updates);
+    renderProfile();closeEdit();
+    toast('プロフィールを更新しました ✓');
+  }catch(e){console.error(e);toast('保存エラー: '+e.code);}
+}
+
+function doWithdraw(){
+  if(confirm('退会・データ削除をご希望の場合は、公式LINEよりご連絡ください。')){
+    const url='https://line.me/R/ti/p/@688gndvs';
+    try{liff.isInClient()?liff.openWindow({url,external:false}):window.open(url,'_blank');}
+    catch(e){window.open(url,'_blank');}
+  }
+}
+
+function go(tab){
+  ['scout','profile','block','status'].forEach(t=>{
+    document.getElementById('page'+t.charAt(0).toUpperCase()+t.slice(1)).classList.toggle('active',t===tab);
+    document.getElementById('tab-'+t).classList.toggle('active',t===tab);
+  });
+}
+
+let tTimer;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(tTimer);tTimer=setTimeout(()=>el.classList.remove('show'),2600);
+}
+
+function esc(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+init();
+</script>
+</body>
+</html>
