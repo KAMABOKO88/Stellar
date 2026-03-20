@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light" style="color-scheme:light only">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Stellar | 店舗ダッシュボード</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<style>
+/* ═══ テーマ変数 ═══ */
+:root {
+  --bg:        #f5f6fa;
+  --surface:   #ffffff;
+  --surface2:  #f0f2f8;
+  --border:    rgba(30,46,100,0.12);
+  --gold:      #b89240;
+  --gold-bg:   rgba(184,146,64,0.08);
+  --gold-bdr:  rgba(184,146,64,0.3);
+  --navy:      #1e2e64;
+  --navy-l:    #3a4f8a;
+  --text-0:    #0d1330;
+  --text-1:    #2a3560;
+  --text-2:    #5a6a9a;
+  --text-3:    #8a9ac0;
+  --green:     #16a34a;
+  --green-bg:  rgba(22,163,74,0.08);
+  --green-bdr: rgba(22,163,74,0.2);
+  --red:       #dc2626;
+  --red-bg:    rgba(220,38,38,0.07);
+  --red-bdr:   rgba(220,38,38,0.18);
+  --amber:     #d97706;
+  --amber-bg:  rgba(217,119,6,0.08);
+  --amber-bdr: rgba(217,119,6,0.25);
+  --shadow:    0 2px 16px rgba(30,46,100,0.10);
+  --shadow-m:  0 8px 32px rgba(30,46,100,0.14);
+  --ease:      cubic-bezier(0.16,1,0.3,1);
+}
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:        #111827;
+  --surface:   #1f2937;
+  --surface2:  #283347;
+  --border:    rgba(255,255,255,0.10);
+  --gold:      #d4ae60;
+  --gold-bg:   rgba(212,174,96,0.10);
+  --gold-bdr:  rgba(212,174,96,0.3);
+  --navy:      #93a8e0;
+  --navy-l:    #b8c8f0;
+  --text-0:    #f0f4ff;
+  --text-1:    #c8d4f0;
+  --text-2:    #8a9ac0;
+  --text-3:    #5a6a8a;
+  --green:     #34d399;
+  --green-bg:  rgba(52,211,153,0.10);
+  --green-bdr: rgba(52,211,153,0.25);
+  --red:       #f87171;
+  --red-bg:    rgba(248,113,113,0.10);
+  --red-bdr:   rgba(248,113,113,0.25);
+  --amber:     #fbbf24;
+  --amber-bg:  rgba(251,191,36,0.10);
+  --amber-bdr: rgba(251,191,36,0.25);
+  --shadow:    0 2px 16px rgba(0,0,0,0.3);
+  --shadow-m:  0 8px 32px rgba(0,0,0,0.4);
+}
+
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-font-smoothing: antialiased; }
+body {
+  background: var(--bg);
+  color: var(--text-0);
+  font-family: "Noto Sans JP", sans-serif;
+  font-size: 14px;
+  line-height: 1.7;
+  min-height: 100vh;
+  transition: background .3s, color .3s;
+}
+
+/* ─── LOADING ─── */
+#loading {
+  position: fixed; inset: 0; z-index: 500;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px;
+}
+.ld-logo { font-family: "Cormorant Garamond", serif; font-size: 28px; font-weight: 600; letter-spacing: 6px; color: var(--gold); }
+.ld-spin { width: 28px; height: 28px; border: 2px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── LOGIN ─── */
+#loginScreen {
+  position: fixed; inset: 0; z-index: 400;
+  background: var(--bg);
+  display: none; align-items: center; justify-content: center; padding: 20px;
+}
+.login-card {
+  width: 100%; max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 48px 40px;
+  box-shadow: var(--shadow-m);
+  animation: fadeUp .5s var(--ease) both;
+}
+.login-logo { text-align: center; margin-bottom: 36px; }
+.login-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 56px; height: 56px;
+  background: linear-gradient(135deg, var(--navy), var(--navy-l));
+  border-radius: 16px; font-size: 24px; color: #fff; margin-bottom: 16px;
+  box-shadow: 0 8px 24px rgba(30,46,100,0.25);
+}
+.login-title { font-family: "Cormorant Garamond", serif; font-size: 28px; font-weight: 600; letter-spacing: 5px; color: var(--navy); }
+.login-sub { font-size: 11px; letter-spacing: 2px; color: var(--text-3); margin-top: 4px; }
+.form-group { margin-bottom: 18px; }
+.form-group label { display: block; font-size: 11px; font-weight: 700; letter-spacing: 2px; color: var(--text-2); margin-bottom: 8px; text-transform: uppercase; }
+.form-group input {
+  width: 100%; padding: 13px 16px;
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 12px; color: var(--text-0);
+  font-size: 14px; font-family: inherit; outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.form-group input:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(30,46,100,0.1); }
+.remember-row { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; }
+.remember-row input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--navy); cursor: pointer; }
+.remember-row label { font-size: 12px; color: var(--text-2); cursor: pointer; }
+.btn-login {
+  width: 100%; padding: 15px;
+  background: linear-gradient(135deg, var(--navy), var(--navy-l));
+  border: none; border-radius: 12px;
+  color: #fff; font-size: 14px; font-weight: 700; letter-spacing: 3px;
+  cursor: pointer; transition: transform .2s var(--ease), box-shadow .2s;
+  box-shadow: 0 6px 20px rgba(30,46,100,0.3);
+}
+.btn-login:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(30,46,100,0.4); }
+.btn-login:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+#loginError { font-size: 12px; color: var(--red); margin-top: 12px; text-align: center; min-height: 18px; }
+.login-help { text-align: center; font-size: 11px; color: var(--text-3); margin-top: 20px; letter-spacing: 1px; }
+
+/* ─── HEADER ─── */
+#mainApp { display: none; min-height: 100vh; }
+header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px; height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: var(--shadow);
+  transition: background .3s;
+}
+.h-logo { font-family: "Cormorant Garamond", serif; font-size: 20px; font-weight: 600; letter-spacing: 4px; color: var(--navy); display: flex; align-items: center; gap: 8px; }
+.h-right { display: flex; align-items: center; gap: 10px; }
+.shop-badge {
+  background: var(--gold-bg); border: 1px solid var(--gold-bdr);
+  border-radius: 20px; padding: 4px 14px;
+  font-size: 12px; color: var(--gold); font-weight: 700; letter-spacing: 1px;
+}
+.btn-theme {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--surface2); border: 1px solid var(--border);
+  cursor: pointer; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .2s; -webkit-tap-highlight-color: transparent;
+}
+.btn-logout {
+  padding: 7px 14px;
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text-2);
+  font-size: 12px; cursor: pointer; transition: all .2s;
+}
+.btn-logout:hover { border-color: var(--red-bdr); color: var(--red); }
+
+/* ─── MAIN ─── */
+main { padding: 24px 16px; max-width: 800px; margin: 0 auto; }
+
+/* ─── STATS ─── */
+.stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 24px; }
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 16px; text-align: center;
+  box-shadow: var(--shadow); transition: background .3s;
+}
+.stat-card .s-num { font-family: "Cormorant Garamond", serif; font-size: 32px; font-weight: 600; color: var(--navy); line-height: 1; }
+.stat-card .s-lbl { font-size: 10px; color: var(--text-3); font-weight: 700; letter-spacing: 1px; margin-top: 4px; }
+
+/* ─── TABS ─── */
+.tab-nav {
+  display: flex; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 4px; gap: 4px; margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+.tab-btn {
+  flex: 1; padding: 10px 8px;
+  background: transparent; border: none; border-radius: 10px;
+  font-size: 12px; font-weight: 700; letter-spacing: 1px; color: var(--text-2);
+  cursor: pointer; transition: all .2s; -webkit-tap-highlight-color: transparent;
+}
+.tab-btn.active { background: var(--navy); color: #fff; box-shadow: 0 2px 8px rgba(30,46,100,0.25); }
+
+/* ─── フィルター ─── */
+.filter-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; margin-bottom: 20px; overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.filter-toggle {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 18px; cursor: pointer; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.filter-toggle-lbl { font-size: 13px; font-weight: 700; color: var(--navy); }
+.filter-toggle-icon { font-size: 11px; color: var(--text-3); transition: transform .3s; }
+.filter-toggle-icon.open { transform: rotate(180deg); }
+.filter-body { display: none; padding: 0 18px 18px; border-top: 1px solid var(--border); }
+.filter-body.open { display: block; }
+.filter-sec { margin-top: 14px; }
+.filter-sec-lbl { font-size: 10px; font-weight: 700; letter-spacing: 2px; color: var(--text-3); text-transform: uppercase; margin-bottom: 8px; display: block; }
+.ftags { display: flex; flex-wrap: wrap; gap: 7px; }
+.ftag {
+  padding: 6px 13px; border-radius: 100px;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.5px;
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text-2);
+  cursor: pointer; transition: all .15s; -webkit-tap-highlight-color: transparent;
+}
+.ftag.on { background: var(--navy); border-color: var(--navy); color: #fff; }
+.filter-kw { width: 100%; padding: 10px 14px; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; color: var(--text-0); font-size: 13px; font-family: inherit; outline: none; margin-top: 14px; }
+.filter-kw:focus { border-color: var(--navy); }
+.filter-active { padding: 8px 18px; background: var(--gold-bg); border-top: 1px solid var(--gold-bdr); display: none; justify-content: space-between; align-items: center; font-size: 11px; color: var(--gold); font-weight: 700; }
+.filter-active.show { display: flex; }
+.btn-reset { padding: 4px 12px; background: transparent; border: 1px solid var(--gold-bdr); border-radius: 6px; color: var(--gold); font-size: 11px; cursor: pointer; }
+
+/* ─── カード ─── */
+.girl-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 18px; padding: 18px; margin-bottom: 12px;
+  box-shadow: var(--shadow); transition: background .3s, transform .2s, box-shadow .2s;
+  animation: fadeUp .4s var(--ease) both;
+}
+.girl-card:hover { transform: translateY(-1px); box-shadow: var(--shadow-m); }
+.girl-card.sent { opacity: .5; filter: grayscale(30%); pointer-events: none; }
+.gc-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.gc-name { font-size: 18px; font-weight: 700; color: var(--text-0); }
+.gc-age { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+.exp-badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 100px; }
+.exp-yes { background: var(--gold-bg); color: var(--gold); border: 1px solid var(--gold-bdr); }
+.exp-no { background: var(--surface2); color: var(--text-2); border: 1px solid var(--border); }
+.gc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.gc-item .gc-lbl { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--text-3); text-transform: uppercase; }
+.gc-item .gc-val { font-size: 13px; color: var(--text-0); margin-top: 2px; }
+.gc-val.wage { color: var(--navy); font-weight: 700; font-size: 15px; }
+.gc-actions { display: flex; gap: 8px; }
+.btn-detail {
+  flex: 1; padding: 11px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; color: var(--text-1);
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  transition: all .2s; font-family: inherit;
+}
+.btn-detail:hover { border-color: var(--navy); color: var(--navy); }
+.btn-scout {
+  flex: 2; padding: 11px;
+  background: linear-gradient(135deg, var(--navy), var(--navy-l));
+  border: none; border-radius: 10px; color: #fff;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: transform .2s, box-shadow .2s; font-family: inherit;
+  box-shadow: 0 4px 12px rgba(30,46,100,0.25);
+}
+.btn-scout:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(30,46,100,0.35); }
+.btn-scout:active { transform: scale(.98); }
+.sent-badge {
+  width: 100%; padding: 11px; text-align: center;
+  background: var(--green-bg); border: 1px solid var(--green-bdr);
+  border-radius: 10px; color: var(--green);
+  font-size: 12px; font-weight: 700; letter-spacing: 1px;
+}
+
+/* ─── スカウト管理 ─── */
+.scout-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.scout-tab {
+  flex: 1; padding: 10px 6px; text-align: center;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  font-size: 12px; font-weight: 700; color: var(--text-2);
+  cursor: pointer; transition: all .2s; -webkit-tap-highlight-color: transparent;
+}
+.scout-tab.active { background: var(--navy); border-color: var(--navy); color: #fff; box-shadow: 0 2px 8px rgba(30,46,100,0.25); }
+.scout-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 18px; margin-bottom: 12px;
+  box-shadow: var(--shadow); animation: fadeUp .4s var(--ease) both;
+}
+.scout-card.accepted { border-color: var(--green-bdr); }
+.scout-card.declined { opacity: .7; }
+.sc-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.sc-name { font-size: 16px; font-weight: 700; color: var(--text-0); }
+.sc-date { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+.status-badge { font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 100px; }
+.status-pending  { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-bdr); }
+.status-accepted { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-bdr); }
+.status-declined { background: var(--surface2); color: var(--text-2); border: 1px solid var(--border); }
+.sc-conds { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; font-size: 12px; color: var(--text-2); }
+.sc-conds span { color: var(--text-0); font-weight: 700; }
+.sc-msg { font-size: 12px; color: var(--text-2); line-height: 1.7; background: var(--surface2); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
+.memo-area {
+  width: 100%; padding: 10px 12px; margin-top: 10px;
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 10px; color: var(--text-0); font-size: 13px;
+  font-family: inherit; resize: none; outline: none; line-height: 1.7;
+  transition: border-color .2s;
+}
+.memo-area:focus { border-color: var(--navy); }
+.btn-save-memo {
+  margin-top: 6px; padding: 7px 16px;
+  background: var(--navy); border: none; border-radius: 8px;
+  color: #fff; font-size: 12px; font-weight: 700; cursor: pointer;
+  transition: opacity .2s;
+}
+.btn-save-memo:hover { opacity: .85; }
+.memo-saved { font-size: 11px; color: var(--green); margin-top: 4px; display: none; }
+.remind-badge {
+  display: inline-block; font-size: 10px; font-weight: 700;
+  padding: 2px 8px; border-radius: 100px; margin-left: 8px;
+  background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-bdr);
+}
+
+/* ─── 詳細モーダル ─── */
+.modal { position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,.5); backdrop-filter: blur(6px); display: none; align-items: flex-end; }
+.modal.active { display: flex; }
+.modal-sheet {
+  width: 100%; max-height: 88vh; background: var(--surface);
+  border-radius: 24px 24px 0 0; padding: 24px 20px 40px;
+  overflow-y: auto; animation: slideUp .35s var(--ease) both;
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+.modal-title { font-family: "Cormorant Garamond", serif; font-size: 22px; font-weight: 600; color: var(--text-0); margin-bottom: 4px; }
+.modal-sub { font-size: 12px; color: var(--text-3); margin-bottom: 20px; }
+.detail-section { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 14px; }
+.detail-sec-title { font-size: 10px; font-weight: 700; letter-spacing: 2px; color: var(--text-3); text-transform: uppercase; margin-bottom: 10px; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.detail-item { background: var(--surface2); border-radius: 12px; padding: 12px; }
+.detail-item.full { grid-column: 1 / -1; }
+.detail-lbl { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--text-3); margin-bottom: 4px; }
+.detail-val { font-size: 14px; color: var(--text-0); line-height: 1.6; }
+.detail-val.wage { color: var(--navy); font-size: 18px; font-weight: 700; }
+.detail-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.detail-tag { font-size: 11px; padding: 3px 10px; border-radius: 100px; background: var(--gold-bg); border: 1px solid var(--gold-bdr); color: var(--gold); font-weight: 700; }
+
+/* ─── スカウトモーダル ─── */
+.scout-modal-inner { width: 100%; max-width: 520px; max-height: 90vh; background: var(--surface); border-radius: 20px; padding: 32px 24px; overflow-y: auto; animation: fadeUp .4s var(--ease) both; }
+.modal.center { align-items: center; justify-content: center; padding: 20px; }
+.scout-modal-title { font-family: "Cormorant Garamond", serif; font-size: 22px; font-weight: 600; color: var(--text-0); margin-bottom: 4px; }
+.scout-modal-sub { font-size: 12px; color: var(--text-3); margin-bottom: 24px; letter-spacing: 1px; }
+.sf-group { margin-bottom: 16px; }
+.sf-label { font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--text-2); display: block; margin-bottom: 6px; text-transform: uppercase; }
+.sf-input, .sf-select, .sf-textarea {
+  width: 100%; padding: 11px 14px;
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 10px; color: var(--text-0);
+  font-size: 13px; font-family: inherit; outline: none;
+  transition: border-color .2s; -webkit-appearance: none;
+}
+.sf-input:focus, .sf-select:focus, .sf-textarea:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(30,46,100,0.08); }
+.sf-textarea { min-height: 90px; resize: none; line-height: 1.7; }
+.sf-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.consent-row {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: var(--amber-bg); border: 1px solid var(--amber-bdr);
+  border-radius: 12px; padding: 14px; margin-bottom: 18px; cursor: pointer;
+}
+.consent-row input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--navy); flex-shrink: 0; margin-top: 1px; }
+.consent-text { font-size: 12px; color: var(--amber); line-height: 1.7; }
+.btn-send {
+  width: 100%; padding: 15px;
+  background: linear-gradient(135deg, var(--navy), var(--navy-l));
+  border: none; border-radius: 12px; color: #fff;
+  font-size: 14px; font-weight: 700; letter-spacing: 2px; cursor: pointer;
+  box-shadow: 0 6px 20px rgba(30,46,100,0.3);
+  transition: transform .2s, box-shadow .2s; font-family: inherit;
+}
+.btn-send:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(30,46,100,0.4); }
+.btn-send:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+.btn-cancel { width: 100%; padding: 13px; margin-top: 8px; background: transparent; border: 1px solid var(--border); border-radius: 12px; color: var(--text-2); font-size: 13px; cursor: pointer; font-family: inherit; transition: background .15s; }
+.btn-cancel:hover { background: var(--surface2); }
+.legal-notice {
+  font-size: 11px; color: var(--text-3); line-height: 1.8;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 16px; margin-top: 24px;
+}
+
+/* ─── TOAST ─── */
+#toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: rgba(15,20,40,.95); color: #fff;
+  font-size: 13px; font-weight: 700; padding: 11px 22px;
+  border-radius: 100px; opacity: 0;
+  transition: all .3s var(--ease); pointer-events: none;
+  white-space: nowrap; z-index: 999;
+  box-shadow: 0 4px 20px rgba(0,0,0,.2);
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ─── EMPTY ─── */
+.empty { text-align: center; padding: 48px 20px; }
+.empty-icon { font-size: 40px; opacity: .4; margin-bottom: 12px; }
+.empty-text { font-size: 14px; color: var(--text-3); }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="ld-logo">✦ STELLAR</div>
+  <div class="ld-spin"></div>
+</div>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-icon">✦</div>
+      <div class="login-title">STELLAR</div>
+      <div class="login-sub">SHOP DASHBOARD</div>
+    </div>
+    <div class="form-group">
+      <label>メールアドレス</label>
+      <input type="email" id="loginEmail" placeholder="shop@example.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label>パスワード</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div class="remember-row">
+      <input type="checkbox" id="rememberEmail">
+      <label for="rememberEmail">メールアドレスを記憶する</label>
+    </div>
+    <button class="btn-login" id="loginBtn" onclick="doLogin()">ログイン</button>
+    <div id="loginError"></div>
+    <p class="login-help">アカウント発行は Stellar 運営までご連絡ください</p>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp">
+  <header>
+    <div class="h-logo"><span>✦</span> STELLAR</div>
+    <div class="h-right">
+      <div class="shop-badge" id="shopBadge">読み込み中...</div>
+      <button class="btn-theme" id="themeBtn" onclick="toggleTheme()" title="テーマ切替">🌙</button>
+      <button class="btn-logout" onclick="doLogout()">ログアウト</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="s-num" id="statVisible">—</div>
+        <div class="s-lbl">候補者数</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-num" id="statSent">—</div>
+        <div class="s-lbl">送信済み</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-num" id="statRemaining">—</div>
+        <div class="s-lbl">残り枠</div>
+      </div>
+    </div>
+
+    <!-- メインタブ -->
+    <div class="tab-nav">
+      <button class="tab-btn active" id="mainTab-candidates" onclick="switchMainTab('candidates')">候補者一覧</button>
+      <button class="tab-btn" id="mainTab-scouts" onclick="switchMainTab('scouts')">スカウト管理</button>
+    </div>
+
+    <!-- 候補者一覧 -->
+    <div id="page-candidates">
+      <!-- フィルター -->
+      <div class="filter-card">
+        <div class="filter-toggle" onclick="toggleFilter()">
+          <span class="filter-toggle-lbl">🔍 絞り込み</span>
+          <span class="filter-toggle-icon" id="filterIcon">▼</span>
+        </div>
+        <div class="filter-body" id="filterBody">
+          <div class="filter-sec">
+            <span class="filter-sec-lbl">希望時給（上限）</span>
+            <div class="ftags">
+              <div class="ftag on" data-f="hourly" data-v="0" onclick="setFTag(this,'hourly')">指定なし</div>
+              <div class="ftag" data-f="hourly" data-v="2500" onclick="setFTag(this,'hourly')">〜¥2,500</div>
+              <div class="ftag" data-f="hourly" data-v="3000" onclick="setFTag(this,'hourly')">〜¥3,000</div>
+              <div class="ftag" data-f="hourly" data-v="3500" onclick="setFTag(this,'hourly')">〜¥3,500</div>
+              <div class="ftag" data-f="hourly" data-v="4000" onclick="setFTag(this,'hourly')">〜¥4,000</div>
+              <div class="ftag" data-f="hourly" data-v="5000" onclick="setFTag(this,'hourly')">〜¥5,000</div>
+            </div>
+          </div>
+          <div class="filter-sec">
+            <span class="filter-sec-lbl">夜職経験</span>
+            <div class="ftags">
+              <div class="ftag on" data-f="exp" data-v="" onclick="setFTag(this,'exp')">すべて</div>
+              <div class="ftag" data-f="exp" data-v="あり" onclick="setFTag(this,'exp')">あり</div>
+              <div class="ftag" data-f="exp" data-v="なし" onclick="setFTag(this,'exp')">なし</div>
+            </div>
+          </div>
+          <div class="filter-sec">
+            <span class="filter-sec-lbl">希望業種（複数可）</span>
+            <div class="ftags">
+              <div class="ftag" data-f="job" data-v="キャバクラ" onclick="toggleFTag(this,'job')">キャバクラ</div>
+              <div class="ftag" data-f="job" data-v="ラウンジ" onclick="toggleFTag(this,'job')">ラウンジ</div>
+              <div class="ftag" data-f="job" data-v="スナック" onclick="toggleFTag(this,'job')">スナック</div>
+              <div class="ftag" data-f="job" data-v="なんでも可" onclick="toggleFTag(this,'job')">なんでも可</div>
+            </div>
+          </div>
+          <div class="filter-sec">
+            <span class="filter-sec-lbl">送迎</span>
+            <div class="ftags">
+              <div class="ftag on" data-f="send" data-v="" onclick="setFTag(this,'send')">すべて</div>
+              <div class="ftag" data-f="send" data-v="必要" onclick="setFTag(this,'send')">必要</div>
+              <div class="ftag" data-f="send" data-v="あれば嬉しい" onclick="setFTag(this,'send')">あれば嬉しい</div>
+              <div class="ftag" data-f="send" data-v="不要" onclick="setFTag(this,'send')">不要</div>
+            </div>
+          </div>
+          <div class="filter-sec">
+            <span class="filter-sec-lbl">体型（複数可）</span>
+            <div class="ftags">
+              <div class="ftag" data-f="body" data-v="スリム" onclick="toggleFTag(this,'body')">スリム</div>
+              <div class="ftag" data-f="body" data-v="普通" onclick="toggleFTag(this,'body')">普通</div>
+              <div class="ftag" data-f="body" data-v="グラマー" onclick="toggleFTag(this,'body')">グラマー</div>
+              <div class="ftag" data-f="body" data-v="ぽっちゃり" onclick="toggleFTag(this,'body')">ぽっちゃり</div>
+            </div>
+          </div>
+          <div class="filter-sec">
+            <span class="filter-sec-lbl">出勤日数</span>
+            <div class="ftags">
+              <div class="ftag on" data-f="days" data-v="" onclick="setFTag(this,'days')">すべて</div>
+              <div class="ftag" data-f="days" data-v="週1〜2" onclick="setFTag(this,'days')">週1〜2日</div>
+              <div class="ftag" data-f="days" data-v="週3〜4" onclick="setFTag(this,'days')">週3〜4日</div>
+              <div class="ftag" data-f="days" data-v="週5〜" onclick="setFTag(this,'days')">週5日以上</div>
+            </div>
+          </div>
+          <input type="text" class="filter-kw" id="filterKw" placeholder="ニックネームで検索" oninput="applyFilters()">
+        </div>
+        <div class="filter-active" id="filterActive">
+          <span id="filterActiveText">絞り込み中</span>
+          <button class="btn-reset" onclick="resetFilters()">リセット</button>
+        </div>
+      </div>
+      <div id="girlsGrid"></div>
+    </div>
+
+    <!-- スカウト管理 -->
+    <div id="page-scouts" style="display:none;">
+      <div class="scout-tabs">
+        <div class="scout-tab active" id="st-pending"  onclick="switchScoutTab('pending')">返答待ち <span id="cnt-pending"></span></div>
+        <div class="scout-tab" id="st-accepted" onclick="switchScoutTab('accepted')">承諾 <span id="cnt-accepted"></span></div>
+        <div class="scout-tab" id="st-declined" onclick="switchScoutTab('declined')">辞退 <span id="cnt-declined"></span></div>
+      </div>
+      <div id="scoutList"></div>
+    </div>
+
+    <div class="legal-notice">
+      <strong>【重要】ご利用上の注意事項</strong><br>
+      本サービスは<strong>職業安定法・個人情報保護法</strong>を遵守した「募集情報等提供事業」として運営されています。
+      スカウト送信時に提示した条件は入店後も変更できません。虚偽の条件提示は利用規約違反となります。
+    </div>
+  </main>
+</div>
+
+<!-- 詳細モーダル -->
+<div class="modal" id="detailModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div id="detailContent"></div>
+  </div>
+</div>
+
+<!-- スカウトモーダル -->
+<div class="modal center" id="scoutModal">
+  <div class="modal-backdrop" onclick="closeScout()" style="position:absolute;inset:0;"></div>
+  <div class="scout-modal-inner" style="position:relative;z-index:1;">
+    <div class="scout-modal-title">スカウトを送る</div>
+    <div class="scout-modal-sub" id="scoutTargetLabel"></div>
+    <div class="sf-row">
+      <div class="sf-group">
+        <label class="sf-label">提示時給（円）<span style="color:var(--red)">*</span></label>
+        <input class="sf-input" type="number" id="scoutHourly" placeholder="3000" min="1000" max="10000">
+      </div>
+      <div class="sf-group">
+        <label class="sf-label">バック率（%）</label>
+        <input class="sf-input" type="number" id="scoutBack" placeholder="50" min="0" max="100">
+      </div>
+    </div>
+    <div class="sf-row">
+      <div class="sf-group">
+        <label class="sf-label">ボトルバック（円）</label>
+        <input class="sf-input" type="number" id="scoutBottle" placeholder="500">
+      </div>
+      <div class="sf-group">
+        <label class="sf-label">送迎</label>
+        <select class="sf-select" id="scoutTransport">
+          <option value="あり">あり</option>
+          <option value="なし">なし</option>
+          <option value="相談可">相談可</option>
+        </select>
+      </div>
+    </div>
+    <div class="sf-group">
+      <label class="sf-label">メッセージ <span style="color:var(--red)">*</span></label>
+      <textarea class="sf-textarea" id="scoutMsg" placeholder="お店の雰囲気や働きやすい環境について、具体的にお伝えください。"></textarea>
+    </div>
+    <div class="consent-row" onclick="document.getElementById('scoutConsent').click()">
+      <input type="checkbox" id="scoutConsent" onclick="event.stopPropagation()">
+      <div class="consent-text">スカウト送信時に提示した条件は入店後も変更できません。この条件での採用に同意します。</div>
+    </div>
+    <button class="btn-send" id="sendBtn" onclick="sendScout()">スカウトを送信する</button>
+    <button class="btn-cancel" onclick="closeScout()">キャンセル</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyAZmmtI-BCneCuO6urLjBbh-5tph0KxcTM",
+  authDomain:        "stellar-takamatsu.firebaseapp.com",
+  projectId:         "stellar-takamatsu",
+  storageBucket:     "stellar-takamatsu.firebasestorage.app",
+  messagingSenderId: "664201750972",
+  appId:             "1:664201750972:web:f16e2d5c8fc3f8256e23b9"
+};
+firebase.initializeApp(FIREBASE_CONFIG);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+
+let currentEmail = '', currentShopName = '';
+let allGirls = [], allScouts = [];
+let sentIds = new Set();
+let sentCount = 0;
+let scoutTargetId = '', scoutTargetNick = '';
+let scoutUnsubscribe = null;
+let currentScoutTab = 'pending';
+const LIMIT = 30;
+
+const fState = { hourly: 0, exp: '', days: '', send: '', job: [], body: [] };
+
+// ── AUTH ──
+auth.onAuthStateChanged(async user => {
+  if (user && user.email) {
+    currentEmail = user.email;
+    try {
+      const s = await db.collection('shops').doc(user.uid).get();
+      currentShopName = s.exists && s.data().shopName ? s.data().shopName : user.email.split('@')[0];
+    } catch { currentShopName = user.email.split('@')[0]; }
+    document.getElementById('shopBadge').textContent = currentShopName;
+    showApp();
+    const ms = new Date(); ms.setDate(1); ms.setHours(0,0,0,0);
+    startScoutListener(ms);
+    await loadGirls();
+  } else {
+    showLogin();
+  }
+});
+
+// ── SCOUT LISTENER (realtime) ──
+function startScoutListener(monthStart) {
+  if (scoutUnsubscribe) scoutUnsubscribe();
+  scoutUnsubscribe = db.collection('scouts')
+    .where('shopEmail', '==', currentEmail)
+    .where('sentAt', '>=', firebase.firestore.Timestamp.fromDate(monthStart))
+    .onSnapshot(snap => {
+      sentIds = new Set();
+      allScouts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      sentCount = snap.size;
+      snap.forEach(d => { if (d.data().targetUserId) sentIds.add(d.data().targetUserId); });
+      updateStats();
+      if (document.getElementById('page-scouts').style.display !== 'none') renderScoutManage();
+      renderGirls(filterGirls(allGirls));
+    }, e => console.error(e));
+}
+
+// ── GIRLS ──
+async function loadGirls() {
+  document.getElementById('girlsGrid').innerHTML = '<div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">読み込み中...</div></div>';
+  try {
+    const snap = await db.collection('users').get();
+    allGirls = [];
+    snap.forEach(doc => {
+      const d = doc.data();
+      const blocked = Array.isArray(d.blockedShopNames) && d.blockedShopNames.includes(currentShopName);
+      if (!blocked && d.nickname && d.status === 'active') allGirls.push({ id: doc.id, ...d });
+    });
+    renderGirls(allGirls);
+    updateStats();
+  } catch(e) {
+    document.getElementById('girlsGrid').innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">${e.message}</div></div>`;
+  }
+}
+
+function filterGirls(list) {
+  const kw = (document.getElementById('filterKw')?.value || '').toLowerCase();
+  return list.filter(g => {
+    if (kw && !(g.nickname||'').toLowerCase().includes(kw)) return false;
+    if (fState.exp) {
+      const e = g.experience || (g.exp && g.exp.includes('経験あり') ? 'あり' : 'なし');
+      if (e !== fState.exp) return false;
+    }
+    if (fState.hourly) {
+      const w = Number(g.minWage||g.minHourlyWage||0);
+      if (w && w > fState.hourly) return false;
+    }
+    if (fState.days && g.workDays !== fState.days) return false;
+    if (fState.send) { const s = g.send||g.needsRide||''; if (s !== fState.send) return false; }
+    if (fState.job.length) {
+      const jt = Array.isArray(g.jobTypes) ? g.jobTypes : [];
+      if (!fState.job.some(v => jt.includes(v) || jt.includes('なんでも可'))) return false;
+    }
+    if (fState.body.length && !fState.body.includes(g.bodyType||'')) return false;
+    return true;
+  });
+}
+
+function renderGirls(list) {
+  const el = document.getElementById('girlsGrid');
+  document.getElementById('statVisible').textContent = list.length;
+  if (!list.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">条件に合う候補者がいません</div></div>'; return; }
+  el.innerHTML = list.map((g, i) => {
+    const hasSent = sentIds.has(g.id);
+    const expCls = (g.experience === 'あり' || (g.exp && g.exp.includes('経験あり'))) ? 'exp-yes' : 'exp-no';
+    const expTxt = (g.experience === 'あり' || (g.exp && g.exp.includes('経験あり'))) ? '経験あり' : '未経験';
+    const aura = Array.isArray(g.aura) ? g.aura.join('・') : (g.vibeType||g.bodyType||'—');
+    const wage = (g.minWage||g.minHourlyWage) ? '¥'+Number(g.minWage||g.minHourlyWage).toLocaleString() : '—';
+    return `<div class="girl-card ${hasSent?'sent':''}" style="animation-delay:${i*.04}s">
+      <div class="gc-head">
+        <div><div class="gc-name">${esc(g.nickname||'—')}</div><div class="gc-age">${g.age?g.age+'歳':'年齢非公開'}</div></div>
+        <span class="exp-badge ${expCls}">${expTxt}</span>
+      </div>
+      <div class="gc-grid">
+        <div class="gc-item"><div class="gc-lbl">希望時給</div><div class="gc-val wage">${wage}</div></div>
+        <div class="gc-item"><div class="gc-lbl">出勤日数</div><div class="gc-val">${esc(g.workDays||'—')}</div></div>
+        <div class="gc-item"><div class="gc-lbl">送迎</div><div class="gc-val">${esc(g.send||g.needsRide||'—')}</div></div>
+        <div class="gc-item"><div class="gc-lbl">雰囲気</div><div class="gc-val">${esc(aura)}</div></div>
+      </div>
+      <div class="gc-actions">
+        <button class="btn-detail" onclick="openDetail('${g.id}')">詳細を見る</button>
+        ${hasSent ? '<div class="sent-badge">✓ スカウト送信済み</div>' : `<button class="btn-scout" onclick="openScout('${g.id}','${esc(g.nickname||'')}')">スカウトを送る →</button>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── DETAIL ──
+function openDetail(id) {
+  const g = allGirls.find(x => x.id === id); if (!g) return;
+  const aura = Array.isArray(g.aura) ? g.aura : [];
+  const jt = Array.isArray(g.jobTypes) ? g.jobTypes : [];
+  const birth = g.birth ? `${g.birth.year}年${g.birth.month}月${g.birth.day}日` : '—';
+  document.getElementById('detailContent').innerHTML = `
+    <div class="modal-title">${esc(g.nickname||'—')}</div>
+    <div class="modal-sub">${birth}</div>
+    <div class="detail-section">
+      <div class="detail-sec-title">基本情報</div>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="detail-lbl">身長</div><div class="detail-val">${esc(g.height?g.height+'cm':'—')}</div></div>
+        <div class="detail-item"><div class="detail-lbl">体型</div><div class="detail-val">${esc(g.bodyType||'—')}</div></div>
+        <div class="detail-item full"><div class="detail-lbl">雰囲気</div><div class="detail-tags">${aura.map(a=>`<span class="detail-tag">${esc(a)}</span>`).join('')||'—'}</div></div>
+        <div class="detail-item full"><div class="detail-lbl">経験</div><div class="detail-val">${esc(g.experience||g.exp||'—')}</div></div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-sec-title">希望条件</div>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="detail-lbl">希望時給</div><div class="detail-val wage">${(g.minWage||g.minHourlyWage)?'¥'+Number(g.minWage||g.minHourlyWage).toLocaleString():'—'}</div></div>
+        <div class="detail-item"><div class="detail-lbl">出勤日数</div><div class="detail-val">${esc(g.workDays||'—')}</div></div>
+        <div class="detail-item"><div class="detail-lbl">送迎</div><div class="detail-val">${esc(g.send||g.needsRide||'—')}</div></div>
+        <div class="detail-item full"><div class="detail-lbl">希望業種</div><div class="detail-tags">${jt.map(j=>`<span class="detail-tag">${esc(j)}</span>`).join('')||'—'}</div></div>
+        ${g.selfPR?`<div class="detail-item full"><div class="detail-lbl">自己PR</div><div class="detail-val" style="font-size:13px;line-height:1.8;">${esc(g.selfPR)}</div></div>`:''}
+      </div>
+    </div>
+    <div style="margin-top:20px;">
+      ${sentIds.has(g.id)
+        ? '<div class="sent-badge">✓ スカウト送信済み</div>'
+        : `<button class="btn-scout" onclick="closeDetail();openScout('${g.id}','${esc(g.nickname||'')}')">スカウトを送る →</button>`}
+    </div>`;
+  document.getElementById('detailModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+function closeDetail() { document.getElementById('detailModal').classList.remove('active'); document.body.style.overflow = ''; }
+
+// ── SCOUT MODAL ──
+function openScout(id, nick) {
+  if (sentCount >= LIMIT) { showToast('今月のスカウト枠（30通）に達しています'); return; }
+  scoutTargetId = id; scoutTargetNick = nick;
+  document.getElementById('scoutTargetLabel').textContent = `送信先：${nick} さん`;
+  ['scoutHourly','scoutBack','scoutBottle','scoutMsg'].forEach(x => document.getElementById(x).value = '');
+  document.getElementById('scoutTransport').value = 'あり';
+  document.getElementById('scoutConsent').checked = false;
+  document.getElementById('sendBtn').disabled = false;
+  document.getElementById('sendBtn').textContent = 'スカウトを送信する';
+  document.getElementById('scoutModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+function closeScout() { document.getElementById('scoutModal').classList.remove('active'); document.body.style.overflow = ''; }
+
+async function sendScout() {
+  const hourly = document.getElementById('scoutHourly').value;
+  const msg    = document.getElementById('scoutMsg').value.trim();
+  if (!hourly)  { showToast('提示時給を入力してください'); return; }
+  if (!msg)     { showToast('メッセージを入力してください'); return; }
+  if (!document.getElementById('scoutConsent').checked) { showToast('条件への同意チェックが必要です'); return; }
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true; btn.textContent = '送信中...';
+  try {
+    await db.collection('scouts').add({
+      shopName: currentShopName, shopEmail: currentEmail,
+      targetUserId: scoutTargetId, targetNickname: scoutTargetNick,
+      offerHourly: Number(hourly),
+      backRate:    document.getElementById('scoutBack').value   ? Number(document.getElementById('scoutBack').value)   : null,
+      bottleBack:  document.getElementById('scoutBottle').value ? Number(document.getElementById('scoutBottle').value) : null,
+      transport:   document.getElementById('scoutTransport').value,
+      message:     msg, consentAgreed: true,
+      status: 'pending',
+      sentAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    closeScout();
+    showToast(`✦ ${scoutTargetNick} さんへ送信しました`);
+  } catch(e) {
+    showToast('送信エラー: ' + e.message);
+    btn.disabled = false; btn.textContent = 'スカウトを送信する';
+  }
+}
+
+// ── SCOUT MANAGE ──
+function switchScoutTab(tab) {
+  currentScoutTab = tab;
+  ['pending','accepted','declined'].forEach(t => {
+    document.getElementById(`st-${t}`).classList.toggle('active', t === tab);
+  });
+  renderScoutManage();
+}
+
+function renderScoutManage() {
+  const list = allScouts.filter(s => (s.status||'pending') === currentScoutTab);
+  const pending  = allScouts.filter(s => (s.status||'pending') === 'pending').length;
+  const accepted = allScouts.filter(s => s.status === 'accepted').length;
+  const declined = allScouts.filter(s => s.status === 'declined').length;
+  document.getElementById('cnt-pending').textContent  = pending  ? `(${pending})`  : '';
+  document.getElementById('cnt-accepted').textContent = accepted ? `(${accepted})` : '';
+  document.getElementById('cnt-declined').textContent = declined ? `(${declined})` : '';
+
+  const el = document.getElementById('scoutList');
+  if (!list.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">✦</div><div class="empty-text">該当するスカウトはありません</div></div>';
+    return;
+  }
+
+  const now = Date.now();
+  el.innerHTML = list.map(s => {
+    const status = s.status || 'pending';
+    const date = s.sentAt?.toDate ? s.sentAt.toDate().toLocaleDateString('ja-JP') : '—';
+    const responded = s.respondedAt?.toDate ? s.respondedAt.toDate().toLocaleDateString('ja-JP') : null;
+    // 3日以上未回答ならリマインドバッジ
+    const daysPassed = s.sentAt?.toDate ? Math.floor((now - s.sentAt.toDate()) / 86400000) : 0;
+    const remind = (status === 'pending' && daysPassed >= 3) ? `<span class="remind-badge">3日以上経過</span>` : '';
+    const statusLabel = { pending: '返答待ち', accepted: '承諾', declined: '辞退' }[status];
+    const statusCls   = { pending: 'status-pending', accepted: 'status-accepted', declined: 'status-declined' }[status];
+    // メモ
+    const memoKey = `scout_memo_${s.id}`;
+    const savedMemo = localStorage.getItem(memoKey) || '';
+
+    return `<div class="scout-card ${status}">
+      <div class="sc-head">
+        <div>
+          <div class="sc-name">${esc(s.targetNickname||'—')} さん${remind}</div>
+          <div class="sc-date">送信日：${date}${responded ? ` ／ 返答日：${responded}` : ''}</div>
+        </div>
+        <span class="status-badge ${statusCls}">${statusLabel}</span>
+      </div>
+      <div class="sc-conds">
+        <div>時給提示：<span>¥${s.offerHourly?Number(s.offerHourly).toLocaleString():'—'}</span></div>
+        <div>バック率：<span>${s.backRate||'—'}%</span></div>
+        <div>送迎：<span>${esc(s.transport||'—')}</span></div>
+        <div>ボトルBK：<span>${s.bottleBack?'¥'+Number(s.bottleBack).toLocaleString():'—'}</span></div>
+      </div>
+      ${s.message ? `<div class="sc-msg">${esc(s.message)}</div>` : ''}
+      ${status === 'accepted' ? `
+        <div>
+          <textarea class="memo-area" id="memo-${s.id}" placeholder="連絡メモ（面接日時・担当者名など）" rows="3">${esc(savedMemo)}</textarea>
+          <button class="btn-save-memo" onclick="saveMemo('${s.id}')">メモを保存</button>
+          <div class="memo-saved" id="memo-saved-${s.id}">✓ 保存しました</div>
+        </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function saveMemo(scoutId) {
+  const memo = document.getElementById(`memo-${scoutId}`).value;
+  localStorage.setItem(`scout_memo_${scoutId}`, memo);
+  const el = document.getElementById(`memo-saved-${scoutId}`);
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 2000);
+}
+
+// ── FILTERS ──
+function setFTag(el, key) {
+  document.querySelectorAll(`.ftag[data-f="${key}"]`).forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  fState[key] = key === 'hourly' ? parseInt(el.dataset.v)||0 : el.dataset.v;
+  applyFilters();
+}
+function toggleFTag(el, key) {
+  el.classList.toggle('on');
+  fState[key] = [...document.querySelectorAll(`.ftag[data-f="${key}"].on`)].map(t => t.dataset.v);
+  applyFilters();
+}
+function applyFilters() {
+  const filtered = filterGirls(allGirls);
+  renderGirls(filtered);
+  const active = fState.hourly || fState.exp || fState.days || fState.send || fState.job.length || fState.body.length || document.getElementById('filterKw').value;
+  document.getElementById('filterActive').classList.toggle('show', !!active);
+  if (active) document.getElementById('filterActiveText').textContent = `絞り込み中 — ${filtered.length}件`;
+}
+function resetFilters() {
+  document.getElementById('filterKw').value = '';
+  fState.hourly = 0; fState.exp = ''; fState.days = ''; fState.send = ''; fState.job = []; fState.body = [];
+  document.querySelectorAll('.ftag').forEach(t => t.classList.remove('on'));
+  document.querySelectorAll('.ftag[data-v="0"],.ftag[data-v=""]').forEach(t => t.classList.add('on'));
+  document.getElementById('filterActive').classList.remove('show');
+  renderGirls(allGirls);
+}
+function toggleFilter() {
+  const body = document.getElementById('filterBody');
+  const icon = document.getElementById('filterIcon');
+  body.classList.toggle('open');
+  icon.classList.toggle('open');
+}
+
+// ── TABS ──
+function switchMainTab(tab) {
+  document.getElementById('page-candidates').style.display = tab === 'candidates' ? 'block' : 'none';
+  document.getElementById('page-scouts').style.display     = tab === 'scouts'     ? 'block' : 'none';
+  document.getElementById('mainTab-candidates').classList.toggle('active', tab === 'candidates');
+  document.getElementById('mainTab-scouts').classList.toggle('active', tab === 'scouts');
+  if (tab === 'scouts') renderScoutManage();
+}
+
+// ── STATS ──
+function updateStats() {
+  document.getElementById('statSent').textContent      = sentCount;
+  document.getElementById('statRemaining').textContent = Math.max(0, LIMIT - sentCount);
+}
+
+// ── THEME ──
+function toggleTheme() {
+  const isDark = document.documentElement.dataset.theme === 'dark';
+  document.documentElement.dataset.theme = isDark ? 'light' : 'dark';
+  document.documentElement.style.colorScheme = isDark ? 'light' : 'dark';
+  document.getElementById('themeBtn').textContent = isDark ? '🌙' : '☀️';
+  localStorage.setItem('shopTheme', isDark ? 'light' : 'dark');
+}
+function loadTheme() {
+  const t = localStorage.getItem('shopTheme') || 'light';
+  document.documentElement.dataset.theme = t;
+  document.documentElement.style.colorScheme = t;
+  document.getElementById('themeBtn').textContent = t === 'dark' ? '☀️' : '🌙';
+}
+
+// ── AUTH HELPERS ──
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pw    = document.getElementById('loginPassword').value;
+  const btn   = document.getElementById('loginBtn');
+  const err   = document.getElementById('loginError');
+  err.textContent = '';
+  if (!email || !pw) { err.textContent = 'メールアドレスとパスワードを入力してください'; return; }
+  btn.disabled = true; btn.textContent = 'ログイン中...';
+  try {
+    await auth.signInWithEmailAndPassword(email, pw);
+    if (document.getElementById('rememberEmail').checked) localStorage.setItem('stellarEmail', email);
+    else localStorage.removeItem('stellarEmail');
+  } catch(e) {
+    const m = { 'auth/user-not-found':'アカウントが見つかりません', 'auth/wrong-password':'パスワードが違います', 'auth/invalid-email':'メールアドレスの形式が正しくありません', 'auth/too-many-requests':'ログイン試行が多すぎます' };
+    err.textContent = m[e.code] || 'ログインに失敗しました';
+    btn.disabled = false; btn.textContent = 'ログイン';
+  }
+}
+async function doLogout() {
+  if (scoutUnsubscribe) scoutUnsubscribe();
+  await auth.signOut();
+}
+function showApp() {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+}
+function showLogin() {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('loginBtn').disabled = false;
+  document.getElementById('loginBtn').textContent = 'ログイン';
+  const saved = localStorage.getItem('stellarEmail');
+  if (saved) { document.getElementById('loginEmail').value = saved; document.getElementById('rememberEmail').checked = true; }
+}
+
+function showToast(msg, dur = 3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── INIT ──
+loadTheme();
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none') doLogin();
+});
+</script>
+</body>
+</html>
