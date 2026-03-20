@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="ja" style="color-scheme:light only">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stellar Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f6fb;--surface:#fff;--surface2:#f0f2f8;
+  --border:#e2e6f0;--border2:#c8d0e8;
+  --primary:#4f46e5;--primary-l:#6366f1;--primary-bg:#eef2ff;--primary-bdr:#c7d2fe;
+  --gold:#b89240;--gold-bg:#fdf8ec;--gold-bdr:#e8d5a0;
+  --green:#16a34a;--green-bg:#f0fdf4;--green-bdr:#bbf7d0;
+  --red:#dc2626;--red-bg:#fef2f2;--red-bdr:#fecaca;
+  --amber:#d97706;--amber-bg:#fffbeb;--amber-bdr:#fde68a;
+  --text-0:#111827;--text-1:#374151;--text-2:#6b7280;--text-3:#9ca3af;
+  --shadow:0 1px 8px rgba(0,0,0,.08);--shadow-m:0 4px 20px rgba(0,0,0,.12);
+}
+html{-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--text-0);font-family:'Inter','Noto Sans JP',sans-serif;font-size:14px;line-height:1.6;min-height:100vh}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.fade-in{animation:fadeUp .3s ease both}
+
+/* ── LOGIN ── */
+#loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,#eef2ff,#f0fdf4);display:flex;align-items:center;justify-content:center;padding:20px;z-index:200}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:40px;width:100%;max-width:400px;box-shadow:var(--shadow-m)}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-icon{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;background:var(--primary);border-radius:12px;color:#fff;font-weight:700;font-size:18px;margin-bottom:12px}
+.login-title{font-size:20px;font-weight:700;color:var(--text-0)}
+.login-sub{font-size:12px;color:var(--text-3);margin-top:2px}
+.fl{margin-bottom:16px}
+.fl label{display:block;font-size:11px;font-weight:600;color:var(--text-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.fi{width:100%;padding:10px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;font-size:14px;color:var(--text-0);outline:none;transition:border-color .2s}
+.fi:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-bg)}
+.btn-login{width:100%;padding:13px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s;margin-top:8px}
+.btn-login:hover{opacity:.9}
+.btn-login:disabled{opacity:.5;cursor:not-allowed}
+#loginErr{font-size:12px;color:var(--red);text-align:center;min-height:16px;margin-top:8px}
+
+/* ── LAYOUT ── */
+#app{display:none;min-height:100vh}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--shadow)}
+.h-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;color:var(--text-0)}
+.h-badge{font-size:10px;background:var(--primary-bg);color:var(--primary);border:1px solid var(--primary-bdr);padding:2px 8px;border-radius:100px;font-weight:600}
+.h-right{display:flex;align-items:center;gap:10px}
+.h-email{font-size:11px;color:var(--text-3)}
+.btn-logout{padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text-2);font-size:12px;cursor:pointer;transition:all .2s}
+.btn-logout:hover{border-color:var(--red-bdr);color:var(--red)}
+
+/* ── SIDEBAR + CONTENT ── */
+.layout{display:flex;min-height:calc(100vh - 56px)}
+.sidebar{width:200px;background:var(--surface);border-right:1px solid var(--border);padding:16px 10px;flex-shrink:0;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto}
+.sidebar-item{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;font-size:13px;font-weight:500;color:var(--text-2);cursor:pointer;transition:all .15s;margin-bottom:2px;user-select:none}
+.sidebar-item:hover{background:var(--surface2);color:var(--text-0)}
+.sidebar-item.active{background:var(--primary-bg);color:var(--primary);font-weight:600}
+.sidebar-icon{font-size:16px;width:20px;text-align:center}
+.content{flex:1;padding:24px;overflow-x:hidden;min-width:0}
+
+/* ── MOBILE NAV ── */
+.mobile-nav{display:none;background:var(--surface);border-top:1px solid var(--border);padding:8px 4px;position:fixed;bottom:0;left:0;right:0;z-index:100;overflow-x:auto}
+.mobile-nav-inner{display:flex;gap:2px;min-width:max-content;padding:0 8px}
+.mnav-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 10px;border-radius:8px;font-size:10px;font-weight:600;color:var(--text-3);cursor:pointer;transition:all .15s;white-space:nowrap}
+.mnav-item.active{color:var(--primary);background:var(--primary-bg)}
+.mnav-icon{font-size:18px}
+@media(max-width:768px){
+  .sidebar{display:none}
+  .mobile-nav{display:block}
+  .content{padding:16px;padding-bottom:80px}
+}
+
+/* ── PANELS ── */
+.panel{display:none}.panel.active{display:block}
+.page-title{font-size:20px;font-weight:700;color:var(--text-0);margin-bottom:4px}
+.page-sub{font-size:13px;color:var(--text-3);margin-bottom:20px}
+
+/* ── STATS GRID ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:var(--shadow)}
+.stat-num{font-size:28px;font-weight:700;color:var(--primary);line-height:1;font-family:'Inter',sans-serif}
+.stat-lbl{font-size:11px;color:var(--text-3);margin-top:4px;font-weight:500}
+.stat-card.green .stat-num{color:var(--green)}
+.stat-card.amber .stat-num{color:var(--amber)}
+.stat-card.red .stat-num{color:var(--red)}
+.stat-card.gold .stat-num{color:var(--gold)}
+
+/* ── TABLE ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:16px}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:14px;font-weight:600;color:var(--text-0)}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;border-bottom:1px solid var(--border)}
+td{padding:12px 14px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text-1)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface2)}
+
+/* ── BADGES ── */
+.badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 10px;border-radius:100px}
+.badge-new{background:var(--primary-bg);color:var(--primary);border:1px solid var(--primary-bdr)}
+.badge-contact{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bdr)}
+.badge-entered{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bdr)}
+.badge-pending{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bdr)}
+.badge-accepted{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bdr)}
+.badge-declined{background:var(--surface2);color:var(--text-2);border:1px solid var(--border)}
+.badge-paid{background:var(--gold-bg);color:var(--gold);border:1px solid var(--gold-bdr)}
+.badge-free{background:var(--surface2);color:var(--text-2);border:1px solid var(--border)}
+
+/* ── FILTER BAR ── */
+.filter-bar{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;box-shadow:var(--shadow)}
+.fi-sm{padding:7px 12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text-0);outline:none;min-width:120px}
+.fi-sm:focus{border-color:var(--primary)}
+.btn-sm{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;border:1px solid var(--border);background:transparent;color:var(--text-2)}
+.btn-sm:hover{background:var(--surface2)}
+.btn-primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+.btn-primary:hover{background:var(--primary-l);border-color:var(--primary-l)}
+
+/* ── STATUS SELECT ── */
+.ss{font-size:12px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);cursor:pointer;outline:none;color:var(--text-1)}
+.ss:focus{border-color:var(--primary)}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--surface);border-radius:20px;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-m);animation:fadeUp .3s ease both}
+.modal-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.modal-title{font-size:16px;font-weight:700;color:var(--text-0)}
+.modal-close{background:none;border:none;font-size:20px;color:var(--text-3);cursor:pointer;line-height:1;padding:0 4px}
+.modal-body{padding:20px 22px}
+.mrow{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.mrow:last-child{border-bottom:none}
+.mrow-label{font-size:12px;color:var(--text-3);width:110px;flex-shrink:0;padding-top:1px}
+.mrow-val{font-size:13px;color:var(--text-0);font-weight:500;flex:1;word-break:break-word}
+.edit-input{width:100%;padding:8px 12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text-0);outline:none}
+.edit-input:focus{border-color:var(--primary)}
+.edit-select{width:100%;padding:8px 12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text-0);outline:none;-webkit-appearance:none}
+
+/* ── EMPTY / LOADING ── */
+.empty-state{text-align:center;padding:48px 20px;color:var(--text-3)}
+.empty-icon{font-size:36px;margin-bottom:10px;opacity:.5}
+.spinner{display:inline-block;width:24px;height:24px;border:2px solid var(--border2);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite}
+
+/* ── MATCHING CARD ── */
+.match-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:10px;box-shadow:var(--shadow)}
+.match-card.accepted{border-left:4px solid var(--green)}
+.match-card.pending{border-left:4px solid var(--amber)}
+.match-card.declined{border-left:4px solid var(--border2);opacity:.7}
+.match-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.match-names{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.match-girl{font-weight:700;font-size:15px;color:var(--text-0)}
+.match-arrow{color:var(--text-3);font-size:12px}
+.match-shop{font-size:13px;color:var(--primary);font-weight:600}
+.match-meta{font-size:11px;color:var(--text-3);margin-top:2px}
+.match-conds{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.match-cond{font-size:11px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;color:var(--text-1)}
+
+/* ── NOTIFICATION ── */
+.notif-form{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:var(--shadow)}
+.notif-textarea{width:100%;padding:12px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;font-size:14px;color:var(--text-0);outline:none;resize:none;line-height:1.7;font-family:inherit;min-height:100px}
+.notif-textarea:focus{border-color:var(--primary)}
+.notif-warning{background:var(--amber-bg);border:1px solid var(--amber-bdr);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--amber);margin-bottom:14px;line-height:1.7}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(12px);background:rgba(17,24,39,.95);color:#fff;font-size:13px;font-weight:600;padding:10px 20px;border-radius:100px;opacity:0;transition:all .3s ease;pointer-events:none;white-space:nowrap;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── GRAPH BAR ── */
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.bar-label{font-size:12px;color:var(--text-1);width:120px;flex-shrink:0;text-align:right}
+.bar-track{flex:1;background:var(--surface2);border-radius:4px;height:20px;overflow:hidden}
+.bar-fill{height:100%;background:var(--primary);border-radius:4px;transition:width .6s ease;display:flex;align-items:center;padding-left:8px}
+.bar-val{font-size:11px;color:#fff;font-weight:600;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card fade-in">
+    <div class="login-logo">
+      <div class="login-icon">S</div>
+      <div class="login-title">Stellar Admin</div>
+      <div class="login-sub">管理者ポータル</div>
+    </div>
+    <div class="fl"><label>メールアドレス</label><input class="fi" id="loginEmail" type="email" placeholder="admin@stellar.jp" autocomplete="email"></div>
+    <div class="fl"><label>パスワード</label><input class="fi" id="loginPassword" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div id="loginErr"></div>
+    <button class="btn-login" id="loginBtn" onclick="doLogin()">ログイン</button>
+    <p style="text-align:center;font-size:11px;color:var(--text-3);margin-top:16px;">Stellar 管理者専用 — 無断アクセス禁止</p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div class="h-brand">
+      <span style="width:28px;height:28px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;flex-shrink:0;">S</span>
+      Stellar Admin
+      <span class="h-badge">管理者</span>
+    </div>
+    <div class="h-right">
+      <span class="h-email" id="adminEmail"></span>
+      <button class="btn-logout" onclick="doLogout()">ログアウト</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+      <div class="sidebar-item active" id="nav-dashboard" onclick="switchPanel('dashboard')"><span class="sidebar-icon">📊</span>ダッシュボード</div>
+      <div class="sidebar-item" id="nav-girls" onclick="switchPanel('girls')"><span class="sidebar-icon">👤</span>女の子管理</div>
+      <div class="sidebar-item" id="nav-matching" onclick="switchPanel('matching')"><span class="sidebar-icon">💌</span>マッチング管理</div>
+      <div class="sidebar-item" id="nav-scouts" onclick="switchPanel('scouts')"><span class="sidebar-icon">📨</span>スカウト一覧</div>
+      <div class="sidebar-item" id="nav-shops" onclick="switchPanel('shops')"><span class="sidebar-icon">🏪</span>店舗管理</div>
+      <div class="sidebar-item" id="nav-revenue" onclick="switchPanel('revenue')"><span class="sidebar-icon">💰</span>売上管理</div>
+      <div class="sidebar-item" id="nav-notify" onclick="switchPanel('notify')"><span class="sidebar-icon">📢</span>通知送信</div>
+      <div class="sidebar-item" id="nav-stats" onclick="switchPanel('stats')"><span class="sidebar-icon">📈</span>統計</div>
+    </nav>
+
+    <div class="content">
+
+      <!-- ① ダッシュボード -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="page-title">ダッシュボード</div>
+        <div class="page-sub">Stellar 全体のサマリー</div>
+        <div class="stat-grid" id="dashStats"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;flex-wrap:wrap">
+          <div class="card">
+            <div class="card-header"><span class="card-title">直近の承諾</span></div>
+            <div id="recentAccepted" style="padding:12px 16px;"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">返答待ちスカウト</span></div>
+            <div id="dashPending" style="padding:12px 16px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ② 女の子管理 -->
+      <div class="panel" id="panel-girls">
+        <div class="page-title">女の子管理</div>
+        <div class="page-sub">登録者一覧・詳細閲覧・ステータス変更</div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-num" id="g-total">—</div><div class="stat-lbl">総登録者</div></div>
+          <div class="stat-card amber"><div class="stat-num" id="g-new">—</div><div class="stat-lbl">未連絡</div></div>
+          <div class="stat-card gold"><div class="stat-num" id="g-contact">—</div><div class="stat-lbl">面接調整中</div></div>
+          <div class="stat-card green"><div class="stat-num" id="g-entered">—</div><div class="stat-lbl">入店済み</div></div>
+        </div>
+        <div class="filter-bar">
+          <input class="fi-sm" id="gSearch" placeholder="ニックネームで検索" oninput="filterGirls()" style="flex:1;min-width:150px;">
+          <select class="fi-sm" id="gStatus" onchange="filterGirls()">
+            <option value="">ステータス: すべて</option>
+            <option value="new">未連絡</option>
+            <option value="contact">面接調整中</option>
+            <option value="entered">入店済み</option>
+          </select>
+          <select class="fi-sm" id="gExp" onchange="filterGirls()">
+            <option value="">経験: すべて</option>
+            <option value="未経験">未経験</option>
+            <option value="経験あり">経験あり</option>
+          </select>
+          <button class="btn-sm" onclick="resetGirlFilter()">リセット</button>
+          <span id="gCount" style="font-size:12px;color:var(--text-3);margin-left:auto;"></span>
+        </div>
+        <div id="girlsLoading" class="empty-state"><div class="spinner"></div></div>
+        <div id="girlsTable" class="card" style="display:none;">
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>#</th><th>ニックネーム</th><th>年齢</th><th>時給</th><th>経験</th><th>勤務日数</th><th>送迎</th><th>登録日</th><th>ステータス</th><th>詳細</th>
+              </tr></thead>
+              <tbody id="girlsTbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="girlsEmpty" class="empty-state" style="display:none;"><div class="empty-icon">👤</div><p>登録者がいません</p></div>
+      </div>
+
+      <!-- ③ マッチング管理 -->
+      <div class="panel" id="panel-matching">
+        <div class="page-title">マッチング管理</div>
+        <div class="page-sub">承諾・辞退・返答待ちの一覧と連絡状況管理</div>
+        <div class="stat-grid">
+          <div class="stat-card green"><div class="stat-num" id="m-accepted">—</div><div class="stat-lbl">承諾</div></div>
+          <div class="stat-card amber"><div class="stat-num" id="m-pending">—</div><div class="stat-lbl">返答待ち</div></div>
+          <div class="stat-card"><div class="stat-num" id="m-declined">—</div><div class="stat-lbl">辞退</div></div>
+          <div class="stat-card gold"><div class="stat-num" id="m-rate">—%</div><div class="stat-lbl">承諾率</div></div>
+        </div>
+        <div class="filter-bar">
+          <select class="fi-sm" id="mStatus" onchange="filterMatching()">
+            <option value="accepted">承諾</option>
+            <option value="pending">返答待ち</option>
+            <option value="declined">辞退</option>
+            <option value="">すべて</option>
+          </select>
+          <input class="fi-sm" id="mSearch" placeholder="店舗名・女の子で検索" oninput="filterMatching()" style="flex:1;min-width:150px;">
+          <button class="btn-sm" onclick="document.getElementById('mSearch').value='';document.getElementById('mStatus').value='accepted';filterMatching()">リセット</button>
+        </div>
+        <div id="matchingList"></div>
+      </div>
+
+      <!-- ④ スカウト一覧 -->
+      <div class="panel" id="panel-scouts">
+        <div class="page-title">スカウト一覧</div>
+        <div class="page-sub">全スカウト送信履歴</div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-num" id="s-total">—</div><div class="stat-lbl">総送信数</div></div>
+          <div class="stat-card green"><div class="stat-num" id="s-accepted">—</div><div class="stat-lbl">承諾</div></div>
+          <div class="stat-card"><div class="stat-num" id="s-declined">—</div><div class="stat-lbl">辞退</div></div>
+          <div class="stat-card amber"><div class="stat-num" id="s-pending">—</div><div class="stat-lbl">返答待ち</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">店舗別スカウト集計</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>店舗名</th><th>今月</th><th>承諾</th><th>辞退</th><th>返答待ち</th><th>残り枠</th></tr></thead>
+              <tbody id="shopSummaryBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="filter-bar">
+          <input class="fi-sm" id="sSearch" placeholder="店舗名・女の子で検索" oninput="filterScouts()" style="flex:1;min-width:150px;">
+          <select class="fi-sm" id="sStatus" onchange="filterScouts()">
+            <option value="">ステータス: すべて</option>
+            <option value="pending">返答待ち</option>
+            <option value="accepted">承諾</option>
+            <option value="declined">辞退</option>
+          </select>
+          <select class="fi-sm" id="sMonth" onchange="filterScouts()"><option value="">月: すべて</option></select>
+          <button class="btn-sm" onclick="resetScoutFilter()">リセット</button>
+          <span id="sCount" style="font-size:12px;color:var(--text-3);margin-left:auto;"></span>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>店舗名</th><th>女の子</th><th>提示時給</th><th>送迎</th><th>送信日</th><th>ステータス</th></tr></thead>
+              <tbody id="scoutsTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ⑤ 店舗管理 -->
+      <div class="panel" id="panel-shops">
+        <div class="page-title">店舗管理</div>
+        <div class="page-sub">登録店舗の一覧・プラン管理</div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-num" id="sh-total">—</div><div class="stat-lbl">登録店舗数</div></div>
+          <div class="stat-card gold"><div class="stat-num" id="sh-paid">—</div><div class="stat-lbl">有料プラン</div></div>
+          <div class="stat-card"><div class="stat-num" id="sh-free">—</div><div class="stat-lbl">無料プラン</div></div>
+        </div>
+        <div id="shopsLoading" class="empty-state"><div class="spinner"></div></div>
+        <div id="shopsTable" class="card" style="display:none;">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>店舗名</th><th>メール</th><th>今月スカウト</th><th>承諾数</th><th>プラン</th><th>操作</th></tr></thead>
+              <tbody id="shopsTbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="shopsEmpty" class="empty-state" style="display:none;"><div class="empty-icon">🏪</div><p>登録店舗がありません</p></div>
+      </div>
+
+      <!-- ⑥ 売上管理 -->
+      <div class="panel" id="panel-revenue">
+        <div class="page-title">売上管理</div>
+        <div class="page-sub">有料プラン契約店舗・月次収益</div>
+        <div class="stat-grid">
+          <div class="stat-card gold"><div class="stat-num" id="rev-monthly">¥—</div><div class="stat-lbl">今月の売上</div></div>
+          <div class="stat-card green"><div class="stat-num" id="rev-paid">—</div><div class="stat-lbl">有料契約店舗数</div></div>
+          <div class="stat-card"><div class="stat-num" id="rev-annual">¥—</div><div class="stat-lbl">年間換算売上</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">有料契約店舗一覧</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>店舗名</th><th>プラン</th><th>月額</th><th>契約開始</th><th>操作</th></tr></thead>
+              <tbody id="revenueTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ⑦ 通知送信 -->
+      <div class="panel" id="panel-notify">
+        <div class="page-title">通知送信</div>
+        <div class="page-sub">女の子・店舗への一斉メッセージ</div>
+        <div class="notif-warning">
+          ⚠️ Phase2（Cloud Functions）実装後に有効になります。現在は送信内容の確認・下書きのみ可能です。
+        </div>
+        <div class="notif-form">
+          <div class="fl" style="margin-bottom:14px;">
+            <label>送信対象</label>
+            <select class="fi" id="notifTarget">
+              <option value="girls">女の子全員</option>
+              <option value="shops">店舗全員</option>
+            </select>
+          </div>
+          <div class="fl" style="margin-bottom:14px;">
+            <label>メッセージ内容</label>
+            <textarea class="notif-textarea" id="notifMsg" placeholder="送信するメッセージを入力してください..."></textarea>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button class="btn-sm btn-primary" onclick="previewNotif()">プレビュー確認</button>
+            <span id="notifCount" style="font-size:12px;color:var(--text-3);"></span>
+          </div>
+          <div id="notifPreview" style="display:none;margin-top:16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;">
+            <p style="font-size:11px;color:var(--text-3);margin-bottom:8px;font-weight:600;">プレビュー</p>
+            <div id="notifPreviewContent" style="font-size:13px;color:var(--text-0);white-space:pre-wrap;line-height:1.8;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ⑧ 統計 -->
+      <div class="panel" id="panel-stats">
+        <div class="page-title">統計</div>
+        <div class="page-sub">登録者・マッチングの分析</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div class="card">
+            <div class="card-header"><span class="card-title">業種別希望分布</span></div>
+            <div id="statsJobTypes" style="padding:16px;"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">経験別分布</span></div>
+            <div id="statsExp" style="padding:16px;"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">希望時給分布</span></div>
+            <div id="statsWage" style="padding:16px;"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">送迎希望分布</span></div>
+            <div id="statsSend" style="padding:16px;"></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /layout -->
+
+  <!-- MOBILE NAV -->
+  <div class="mobile-nav">
+    <div class="mobile-nav-inner">
+      <div class="mnav-item active" id="mnav-dashboard" onclick="switchPanel('dashboard')"><div class="mnav-icon">📊</div>概要</div>
+      <div class="mnav-item" id="mnav-girls" onclick="switchPanel('girls')"><div class="mnav-icon">👤</div>女の子</div>
+      <div class="mnav-item" id="mnav-matching" onclick="switchPanel('matching')"><div class="mnav-icon">💌</div>マッチ</div>
+      <div class="mnav-item" id="mnav-scouts" onclick="switchPanel('scouts')"><div class="mnav-icon">📨</div>スカウト</div>
+      <div class="mnav-item" id="mnav-shops" onclick="switchPanel('shops')"><div class="mnav-icon">🏪</div>店舗</div>
+      <div class="mnav-item" id="mnav-revenue" onclick="switchPanel('revenue')"><div class="mnav-icon">💰</div>売上</div>
+      <div class="mnav-item" id="mnav-notify" onclick="switchPanel('notify')"><div class="mnav-icon">📢</div>通知</div>
+      <div class="mnav-item" id="mnav-stats" onclick="switchPanel('stats')"><div class="mnav-icon">📈</div>統計</div>
+    </div>
+  </div>
+</div>
+
+<!-- 女の子詳細モーダル -->
+<div class="modal-overlay" id="girlModal">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <span class="modal-title" id="girlModalTitle">詳細</span>
+      <button class="modal-close" onclick="closeGirlModal()">×</button>
+    </div>
+    <div class="modal-body" id="girlModalBody"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const FB = {
+  apiKey:"AIzaSyAZmmtI-BCneCuO6urLjBbh-5tph0KxcTM",
+  authDomain:"stellar-takamatsu.firebaseapp.com",
+  projectId:"stellar-takamatsu",
+  storageBucket:"stellar-takamatsu.firebasestorage.app",
+  messagingSenderId:"664201750972",
+  appId:"1:664201750972:web:f16e2d5c8fc3f8256e23b9"
+};
+firebase.initializeApp(FB);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+let allUsers   = [];
+let allScouts  = [];
+let allShops   = [];
+let statusCache = {};
+let currentPanel = 'dashboard';
+
+// ── AUTH ──
+auth.onAuthStateChanged(user => {
+  if (user) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('adminEmail').textContent = user.email;
+    loadAll();
+  } else {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+  }
+});
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pw    = document.getElementById('loginPassword').value;
+  const btn   = document.getElementById('loginBtn');
+  const err   = document.getElementById('loginErr');
+  err.textContent = '';
+  if (!email || !pw) { err.textContent = 'メールアドレスとパスワードを入力してください'; return; }
+  btn.disabled = true; btn.textContent = 'ログイン中...';
+  try {
+    await auth.signInWithEmailAndPassword(email, pw);
+  } catch(e) {
+    err.textContent = 'メールアドレスまたはパスワードが正しくありません';
+    btn.disabled = false; btn.textContent = 'ログイン';
+  }
+}
+
+async function doLogout() {
+  if (!confirm('ログアウトしますか？')) return;
+  await auth.signOut();
+}
+
+// ── LOAD ALL ──
+async function loadAll() {
+  await Promise.all([loadUsers(), loadScouts(), loadShops()]);
+  renderDashboard();
+  renderStats();
+}
+
+async function loadUsers() {
+  try {
+    const snap = await db.collection('users').orderBy('registeredAt', 'desc').get();
+    allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allUsers.forEach(u => { statusCache[u.id] = u.adminStatus || 'new'; });
+    renderGirls();
+  } catch(e) {
+    console.error('loadUsers:', e);
+    document.getElementById('girlsLoading').innerHTML = '<p style="color:var(--red);font-size:13px;">読み込みに失敗しました</p>';
+  }
+}
+
+async function loadScouts() {
+  try {
+    const snap = await db.collection('scouts').orderBy('sentAt', 'desc').get();
+    allScouts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderScouts();
+    renderMatching();
+    buildMonthOptions();
+  } catch(e) {
+    console.error('loadScouts:', e);
+  }
+}
+
+async function loadShops() {
+  try {
+    const snap = await db.collection('shops').get();
+    allShops = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderShops();
+    renderRevenue();
+  } catch(e) {
+    console.error('loadShops:', e);
+    document.getElementById('shopsLoading').innerHTML = '<p style="color:var(--red);font-size:13px;">読み込みに失敗しました</p>';
+  }
+}
+
+// ── PANEL ──
+const PANELS = ['dashboard','girls','matching','scouts','shops','revenue','notify','stats'];
+function switchPanel(name) {
+  currentPanel = name;
+  PANELS.forEach(p => {
+    document.getElementById('panel-'+p).classList.toggle('active', p === name);
+    const n = document.getElementById('nav-'+p);
+    if (n) n.classList.toggle('active', p === name);
+    const m = document.getElementById('mnav-'+p);
+    if (m) m.classList.toggle('active', p === name);
+  });
+}
+
+// ── DASHBOARD ──
+function renderDashboard() {
+  const total     = allUsers.length;
+  const newUsers  = allUsers.filter(u => (statusCache[u.id]||'new') === 'new').length;
+  const entered   = allUsers.filter(u => statusCache[u.id] === 'entered').length;
+  const accepted  = allScouts.filter(s => s.status === 'accepted').length;
+  const pending   = allScouts.filter(s => (s.status||'pending') === 'pending').length;
+  const paidShops = allShops.filter(s => s.plan === 'paid').length;
+
+  document.getElementById('dashStats').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-lbl">登録者数</div></div>
+    <div class="stat-card amber"><div class="stat-num">${newUsers}</div><div class="stat-lbl">未連絡</div></div>
+    <div class="stat-card green"><div class="stat-num">${entered}</div><div class="stat-lbl">入店済み</div></div>
+    <div class="stat-card green"><div class="stat-num">${accepted}</div><div class="stat-lbl">累計承諾</div></div>
+    <div class="stat-card amber"><div class="stat-num">${pending}</div><div class="stat-lbl">返答待ち</div></div>
+    <div class="stat-card gold"><div class="stat-num">${paidShops}</div><div class="stat-lbl">有料店舗</div></div>
+  `;
+
+  // 直近承諾
+  const recentAcc = allScouts.filter(s => s.status === 'accepted').slice(0, 5);
+  document.getElementById('recentAccepted').innerHTML = recentAcc.length
+    ? recentAcc.map(s => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+          <div style="font-size:13px;"><span style="font-weight:600;">${esc(s.targetNickname||'—')}</span> ← ${esc(s.shopName||'—')}</div>
+          <span class="badge badge-accepted">承諾</span>
+        </div>`).join('')
+    : '<p style="font-size:13px;color:var(--text-3);">承諾データなし</p>';
+
+  // 返答待ち
+  const pList = allScouts.filter(s => (s.status||'pending') === 'pending').slice(0, 5);
+  document.getElementById('dashPending').innerHTML = pList.length
+    ? pList.map(s => {
+        const days = s.sentAt?.toDate ? Math.floor((Date.now() - s.sentAt.toDate()) / 86400000) : 0;
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+          <div style="font-size:13px;"><span style="font-weight:600;">${esc(s.targetNickname||'—')}</span> ← ${esc(s.shopName||'—')}</div>
+          <span style="font-size:11px;color:${days>=3?'var(--amber)':'var(--text-3)'};">${days}日経過</span>
+        </div>`;
+      }).join('')
+    : '<p style="font-size:13px;color:var(--text-3);">返答待ちなし</p>';
+}
+
+// ── GIRLS ──
+function renderGirls() {
+  document.getElementById('girlsLoading').style.display = 'none';
+  const filtered = getFilteredGirls();
+  document.getElementById('gTotal').textContent = allUsers.length;
+  document.getElementById('g-total').textContent = allUsers.length;
+  document.getElementById('g-new').textContent     = allUsers.filter(u=>(statusCache[u.id]||'new')==='new').length;
+  document.getElementById('g-contact').textContent = allUsers.filter(u=>statusCache[u.id]==='contact').length;
+  document.getElementById('g-entered').textContent = allUsers.filter(u=>statusCache[u.id]==='entered').length;
+  document.getElementById('gCount').textContent = filtered.length + '件';
+
+  if (!filtered.length) {
+    document.getElementById('girlsTable').style.display = 'none';
+    document.getElementById('girlsEmpty').style.display = 'block';
+    return;
+  }
+  document.getElementById('girlsTable').style.display = 'block';
+  document.getElementById('girlsEmpty').style.display = 'none';
+
+  document.getElementById('girlsTbody').innerHTML = filtered.map((u, i) => {
+    const age = calcAge(u.birth);
+    const status = statusCache[u.id] || 'new';
+    const badgeCls = { new:'badge-new', contact:'badge-contact', entered:'badge-entered' }[status];
+    const badgeLbl = { new:'未連絡', contact:'面接調整中', entered:'入店済み' }[status];
+    const expShort = u.exp ? (u.exp.includes('経験あり') ? '経験あり' : '未経験') : '—';
+    return `<tr>
+      <td style="color:var(--text-3)">${i+1}</td>
+      <td><div style="font-weight:600;">${esc(u.nickname||'—')}</div><div style="font-size:11px;color:var(--text-3);">${esc(u.lineDisplayName||'')}</div></td>
+      <td>${age !== null ? age+'歳' : '—'}</td>
+      <td style="font-weight:600;color:var(--primary);">${u.minWage ? '¥'+u.minWage.toLocaleString()+'〜' : '—'}</td>
+      <td>${expShort}</td>
+      <td>${esc(u.workDays||'—')}</td>
+      <td>${esc(u.send||'—')}</td>
+      <td style="color:var(--text-3);font-size:12px;">${formatDate(u.registeredAt)}</td>
+      <td><select class="ss" onchange="updateUserStatus('${u.id}',this.value)">
+        <option value="new" ${status==='new'?'selected':''}>未連絡</option>
+        <option value="contact" ${status==='contact'?'selected':''}>面接調整中</option>
+        <option value="entered" ${status==='entered'?'selected':''}>入店済み</option>
+      </select></td>
+      <td><button class="btn-sm" onclick="openGirlModal('${u.id}')">詳細</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function getFilteredGirls() {
+  const q      = (document.getElementById('gSearch')?.value || '').toLowerCase();
+  const status = document.getElementById('gStatus')?.value || '';
+  const exp    = document.getElementById('gExp')?.value || '';
+  return allUsers.filter(u => {
+    if (q && !(u.nickname||'').toLowerCase().includes(q)) return false;
+    if (status && (statusCache[u.id]||'new') !== status) return false;
+    if (exp) {
+      const e = u.exp || '';
+      if (exp === '経験あり' && !e.includes('経験あり')) return false;
+      if (exp === '未経験' && e.includes('経験あり')) return false;
+    }
+    return true;
+  });
+}
+function filterGirls() { renderGirls(); }
+function resetGirlFilter() {
+  document.getElementById('gSearch').value = '';
+  document.getElementById('gStatus').value = '';
+  document.getElementById('gExp').value = '';
+  renderGirls();
+}
+
+async function updateUserStatus(userId, newStatus) {
+  statusCache[userId] = newStatus;
+  renderGirls();
+  renderDashboard();
+  try {
+    await db.collection('users').doc(userId).update({ adminStatus: newStatus, adminStatusUpdatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    showToast('ステータスを保存しました');
+  } catch(e) { showToast('⚠️ 保存に失敗しました'); }
+}
+
+// ── GIRL MODAL ──
+function openGirlModal(userId) {
+  const u = allUsers.find(x => x.id === userId);
+  if (!u) return;
+  const age = calcAge(u.birth);
+  const birth = u.birth ? `${u.birth.year}年${u.birth.month}月${u.birth.day}日` : '—';
+  const aura = Array.isArray(u.aura) ? u.aura.join('・') : '—';
+  const jt = Array.isArray(u.jobTypes) ? u.jobTypes.join('・') : '—';
+  const blocked = Array.isArray(u.blockedShopNames) ? u.blockedShopNames.join('、') : '—';
+
+  document.getElementById('girlModalTitle').textContent = (u.nickname||'—') + 'さん';
+  document.getElementById('girlModalBody').innerHTML = `
+    <div class="mrow"><span class="mrow-label">LINE表示名</span><span class="mrow-val">${esc(u.lineDisplayName||'—')}</span></div>
+    <div class="mrow"><span class="mrow-label">ニックネーム</span><span class="mrow-val">
+      <input class="edit-input" id="edit-nick" value="${esc(u.nickname||'')}">
+    </span></div>
+    <div class="mrow"><span class="mrow-label">生年月日</span><span class="mrow-val">${birth}（${age !== null ? age+'歳' : '—'}）</span></div>
+    <div class="mrow"><span class="mrow-label">身長</span><span class="mrow-val">${u.height ? u.height+'cm' : '—'}</span></div>
+    <div class="mrow"><span class="mrow-label">体型</span><span class="mrow-val">${esc(u.bodyType||'—')}</span></div>
+    <div class="mrow"><span class="mrow-label">雰囲気</span><span class="mrow-val">${aura}</span></div>
+    <div class="mrow"><span class="mrow-label">夜職経験</span><span class="mrow-val">${esc(u.exp||'—')}</span></div>
+    <div class="mrow"><span class="mrow-label">希望時給</span><span class="mrow-val">${u.minWage ? '¥'+u.minWage.toLocaleString()+'〜' : '—'}</span></div>
+    <div class="mrow"><span class="mrow-label">出勤日数</span><span class="mrow-val">${esc(u.workDays||'—')}</span></div>
+    <div class="mrow"><span class="mrow-label">送迎</span><span class="mrow-val">${esc(u.send||'—')}</span></div>
+    <div class="mrow"><span class="mrow-label">希望業種</span><span class="mrow-val">${jt}</span></div>
+    <div class="mrow"><span class="mrow-label">ブロック店舗</span><span class="mrow-val" style="color:var(--red);font-size:12px;">${esc(blocked)}</span></div>
+    <div class="mrow"><span class="mrow-label">自己PR</span><span class="mrow-val">${esc(u.selfPR||'—')}</span></div>
+    <div class="mrow"><span class="mrow-label">ステータス</span><span class="mrow-val">
+      <select class="edit-select" id="edit-status">
+        <option value="new" ${(statusCache[u.id]||'new')==='new'?'selected':''}>未連絡</option>
+        <option value="contact" ${statusCache[u.id]==='contact'?'selected':''}>面接調整中</option>
+        <option value="entered" ${statusCache[u.id]==='entered'?'selected':''}>入店済み</option>
+      </select>
+    </span></div>
+    <div class="mrow"><span class="mrow-label">LINE User ID</span><span class="mrow-val" style="font-size:11px;color:var(--text-3);word-break:break-all;">${esc(u.lineUserId||u.id)}</span></div>
+    <div class="mrow"><span class="mrow-label">登録日</span><span class="mrow-val">${formatDate(u.registeredAt)}</span></div>
+    <div style="margin-top:16px;display:flex;gap:10px;">
+      <button class="btn-sm btn-primary" onclick="saveGirlEdit('${userId}')">変更を保存</button>
+      <button class="btn-sm" onclick="closeGirlModal()">閉じる</button>
+    </div>
+  `;
+  document.getElementById('girlModal').classList.add('open');
+}
+
+async function saveGirlEdit(userId) {
+  const nick   = document.getElementById('edit-nick').value.trim();
+  const status = document.getElementById('edit-status').value;
+  if (!nick) { showToast('ニックネームを入力してください'); return; }
+  statusCache[userId] = status;
+  const u = allUsers.find(x => x.id === userId);
+  if (u) u.nickname = nick;
+  try {
+    await db.collection('users').doc(userId).update({
+      nickname: nick,
+      adminStatus: status,
+      adminStatusUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast('保存しました');
+    renderGirls();
+    closeGirlModal();
+  } catch(e) { showToast('⚠️ 保存に失敗しました: ' + e.message); }
+}
+
+function closeGirlModal() { document.getElementById('girlModal').classList.remove('open'); }
+document.getElementById('girlModal').addEventListener('click', function(e) { if (e.target === this) closeGirlModal(); });
+
+// ── MATCHING ──
+function renderMatching() {
+  const accepted  = allScouts.filter(s => s.status === 'accepted').length;
+  const pending   = allScouts.filter(s => (s.status||'pending') === 'pending').length;
+  const declined  = allScouts.filter(s => s.status === 'declined').length;
+  const resolved  = accepted + declined;
+  document.getElementById('m-accepted').textContent = accepted;
+  document.getElementById('m-pending').textContent  = pending;
+  document.getElementById('m-declined').textContent = declined;
+  document.getElementById('m-rate').textContent     = resolved > 0 ? Math.round(accepted/resolved*100)+'%' : '—%';
+  filterMatching();
+}
+
+function filterMatching() {
+  const status = document.getElementById('mStatus')?.value || 'accepted';
+  const q      = (document.getElementById('mSearch')?.value || '').toLowerCase();
+  const list = allScouts.filter(s => {
+    const st = s.status || 'pending';
+    if (status && st !== status) return false;
+    if (q && !(s.shopName||'').toLowerCase().includes(q) && !(s.targetNickname||'').toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  const el = document.getElementById('matchingList');
+  if (!list.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">💌</div><p>該当するデータがありません</p></div>';
+    return;
+  }
+
+  const now = Date.now();
+  el.innerHTML = list.map(s => {
+    const st = s.status || 'pending';
+    const badgeCls = { accepted:'badge-accepted', pending:'badge-pending', declined:'badge-declined' }[st];
+    const badgeLbl = { accepted:'承諾', pending:'返答待ち', declined:'辞退' }[st];
+    const date = formatDate(s.sentAt);
+    const days = s.sentAt?.toDate ? Math.floor((now - s.sentAt.toDate()) / 86400000) : 0;
+    const remind = (st === 'pending' && days >= 3) ? `<span style="font-size:10px;background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bdr);padding:2px 8px;border-radius:100px;margin-left:6px;">${days}日経過</span>` : '';
+    return `<div class="match-card ${st}">
+      <div class="match-header">
+        <div>
+          <div class="match-names">
+            <span class="match-girl">${esc(s.targetNickname||'—')}</span>
+            <span class="match-arrow">←スカウト—</span>
+            <span class="match-shop">${esc(s.shopName||'—')}</span>
+            ${remind}
+          </div>
+          <div class="match-meta">送信日：${date}${s.respondedAt ? '　返答日：'+formatDate(s.respondedAt) : ''}</div>
+        </div>
+        <span class="badge ${badgeCls}">${badgeLbl}</span>
+      </div>
+      <div class="match-conds">
+        ${s.offerHourly ? `<span class="match-cond">時給 ¥${s.offerHourly.toLocaleString()}</span>` : ''}
+        ${s.backRate    ? `<span class="match-cond">バック ${s.backRate}%</span>` : ''}
+        ${s.transport   ? `<span class="match-cond">送迎 ${esc(s.transport)}</span>` : ''}
+        ${s.bottleBack  ? `<span class="match-cond">ボトルBK ¥${s.bottleBack.toLocaleString()}</span>` : ''}
+      </div>
+      ${s.message ? `<div style="font-size:12px;color:var(--text-2);background:var(--surface2);border-radius:8px;padding:8px 10px;line-height:1.7;">${esc(s.message)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── SCOUTS ──
+function buildMonthOptions() {
+  const months = new Set();
+  allScouts.forEach(s => {
+    if (s.sentAt?.toDate) {
+      const d = s.sentAt.toDate();
+      months.add(d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0'));
+    }
+  });
+  const sel = document.getElementById('sMonth');
+  [...months].sort().reverse().forEach(m => {
+    const o = document.createElement('option');
+    o.value = m; o.textContent = m; sel.appendChild(o);
+  });
+}
+
+function renderScouts() {
+  const total    = allScouts.length;
+  const accepted = allScouts.filter(s => s.status === 'accepted').length;
+  const declined = allScouts.filter(s => s.status === 'declined').length;
+  const pending  = allScouts.filter(s => (s.status||'pending') === 'pending').length;
+  document.getElementById('s-total').textContent    = total;
+  document.getElementById('s-accepted').textContent = accepted;
+  document.getElementById('s-declined').textContent = declined;
+  document.getElementById('s-pending').textContent  = pending;
+
+  // 店舗別集計
+  const now = new Date();
+  const shopMap = {};
+  allScouts.forEach(s => {
+    if (!s.shopName) return;
+    if (!shopMap[s.shopName]) shopMap[s.shopName] = { total:0, accepted:0, declined:0, pending:0, thisMonth:0 };
+    const m = shopMap[s.shopName];
+    m.total++;
+    if (s.status === 'accepted') m.accepted++;
+    else if (s.status === 'declined') m.declined++;
+    else m.pending++;
+    if (s.sentAt?.toDate) {
+      const d = s.sentAt.toDate();
+      if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) m.thisMonth++;
+    }
+  });
+  const tbody = document.getElementById('shopSummaryBody');
+  const shops = Object.entries(shopMap).sort((a,b) => b[1].thisMonth - a[1].thisMonth);
+  tbody.innerHTML = shops.length
+    ? shops.map(([name, d]) => {
+        const rem = 30 - d.thisMonth;
+        const remCls = rem <= 5 ? 'color:var(--red);font-weight:700;' : rem <= 10 ? 'color:var(--amber);' : 'color:var(--green);';
+        return `<tr>
+          <td style="font-weight:600;">${esc(name)}</td>
+          <td>${d.thisMonth}件</td>
+          <td style="color:var(--green);font-weight:600;">${d.accepted}件</td>
+          <td style="color:var(--text-2);">${d.declined}件</td>
+          <td style="color:var(--amber);">${d.pending}件</td>
+          <td style="${remCls}">${rem}枠</td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:20px;">データなし</td></tr>';
+
+  filterScouts();
+}
+
+function filterScouts() {
+  const q      = (document.getElementById('sSearch')?.value || '').toLowerCase();
+  const status = document.getElementById('sStatus')?.value || '';
+  const month  = document.getElementById('sMonth')?.value || '';
+  const list   = allScouts.filter(s => {
+    if (q && !(s.shopName||'').toLowerCase().includes(q) && !(s.targetNickname||'').toLowerCase().includes(q)) return false;
+    if (status && (s.status||'pending') !== status) return false;
+    if (month && s.sentAt?.toDate) {
+      const d = s.sentAt.toDate();
+      const m = d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0');
+      if (m !== month) return false;
+    }
+    return true;
+  });
+  document.getElementById('sCount').textContent = list.length + '件';
+  const badgeCls = { accepted:'badge-accepted', pending:'badge-pending', declined:'badge-declined' };
+  const badgeLbl = { accepted:'承諾', pending:'返答待ち', declined:'辞退' };
+  document.getElementById('scoutsTbody').innerHTML = list.map((s, i) => {
+    const st = s.status || 'pending';
+    return `<tr>
+      <td style="color:var(--text-3);">${i+1}</td>
+      <td style="font-weight:600;">${esc(s.shopName||'—')}</td>
+      <td>${esc(s.targetNickname||'—')}</td>
+      <td style="color:var(--primary);font-weight:600;">${s.offerHourly ? '¥'+s.offerHourly.toLocaleString() : '—'}</td>
+      <td style="color:var(--text-2);">${esc(s.transport||'—')}</td>
+      <td style="color:var(--text-3);font-size:12px;">${formatDate(s.sentAt)}</td>
+      <td><span class="badge ${badgeCls[st]||'badge-pending'}">${badgeLbl[st]||'返答待ち'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function resetScoutFilter() {
+  document.getElementById('sSearch').value = '';
+  document.getElementById('sStatus').value = '';
+  document.getElementById('sMonth').value = '';
+  filterScouts();
+}
+
+// ── SHOPS ──
+function renderShops() {
+  document.getElementById('shopsLoading').style.display = 'none';
+  const paid = allShops.filter(s => s.plan === 'paid').length;
+  const free = allShops.filter(s => s.plan !== 'paid').length;
+  document.getElementById('sh-total').textContent = allShops.length;
+  document.getElementById('sh-paid').textContent  = paid;
+  document.getElementById('sh-free').textContent  = free;
+
+  if (!allShops.length) {
+    document.getElementById('shopsEmpty').style.display = 'block';
+    return;
+  }
+  document.getElementById('shopsTable').style.display = 'block';
+
+  // スカウト集計をshopに紐付け
+  const scoutByShop = {};
+  allScouts.forEach(s => {
+    if (!s.shopEmail) return;
+    if (!scoutByShop[s.shopEmail]) scoutByShop[s.shopEmail] = { thisMonth: 0, accepted: 0 };
+    const now = new Date();
+    if (s.sentAt?.toDate) {
+      const d = s.sentAt.toDate();
+      if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) scoutByShop[s.shopEmail].thisMonth++;
+    }
+    if (s.status === 'accepted') scoutByShop[s.shopEmail].accepted++;
+  });
+
+  document.getElementById('shopsTbody').innerHTML = allShops.map((sh, i) => {
+    const stats  = scoutByShop[sh.email] || { thisMonth: 0, accepted: 0 };
+    const isPaid = sh.plan === 'paid';
+    return `<tr>
+      <td style="color:var(--text-3);">${i+1}</td>
+      <td style="font-weight:600;">${esc(sh.shopName||sh.id)}</td>
+      <td style="font-size:12px;color:var(--text-3);">${esc(sh.email||'—')}</td>
+      <td>${stats.thisMonth}件</td>
+      <td style="color:var(--green);font-weight:600;">${stats.accepted}件</td>
+      <td><span class="badge ${isPaid?'badge-paid':'badge-free'}">${isPaid?'有料':'無料'}</span></td>
+      <td>
+        <select class="ss" onchange="updateShopPlan('${sh.id}',this.value)">
+          <option value="free" ${!isPaid?'selected':''}>無料</option>
+          <option value="paid" ${isPaid?'selected':''}>有料</option>
+        </select>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function updateShopPlan(shopId, plan) {
+  const shop = allShops.find(s => s.id === shopId);
+  if (shop) shop.plan = plan;
+  renderShops();
+  renderRevenue();
+  renderDashboard();
+  try {
+    await db.collection('shops').doc(shopId).update({ plan, planUpdatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    showToast('プランを更新しました');
+  } catch(e) { showToast('⚠️ 保存に失敗しました'); }
+}
+
+// ── REVENUE ──
+function renderRevenue() {
+  const PLAN_PRICE = 30000;
+  const paidShops  = allShops.filter(s => s.plan === 'paid');
+  const monthly    = paidShops.length * PLAN_PRICE;
+  document.getElementById('rev-monthly').textContent = '¥' + monthly.toLocaleString();
+  document.getElementById('rev-paid').textContent    = paidShops.length;
+  document.getElementById('rev-annual').textContent  = '¥' + (monthly * 12).toLocaleString();
+
+  document.getElementById('revenueTbody').innerHTML = paidShops.length
+    ? paidShops.map(sh => `<tr>
+        <td style="font-weight:600;">${esc(sh.shopName||sh.id)}</td>
+        <td><span class="badge badge-paid">有料プラン</span></td>
+        <td style="color:var(--gold);font-weight:700;">¥${PLAN_PRICE.toLocaleString()}/月</td>
+        <td style="font-size:12px;color:var(--text-3);">${formatDate(sh.planUpdatedAt)||'—'}</td>
+        <td><button class="btn-sm" onclick="updateShopPlan('${sh.id}','free')">無料に変更</button></td>
+      </tr>`).join('')
+    : '<tr><td colspan="5" style="text-align:center;color:var(--text-3);padding:20px;">有料契約店舗なし</td></tr>';
+}
+
+// ── NOTIFY ──
+function previewNotif() {
+  const target = document.getElementById('notifTarget').value;
+  const msg    = document.getElementById('notifMsg').value.trim();
+  if (!msg) { showToast('メッセージを入力してください'); return; }
+  const count  = target === 'girls' ? allUsers.length : allShops.length;
+  const label  = target === 'girls' ? '女の子' : '店舗';
+  document.getElementById('notifCount').textContent = `送信対象：${count}${label === '女の子' ? '名' : '店舗'}`;
+  document.getElementById('notifPreviewContent').textContent = msg;
+  document.getElementById('notifPreview').style.display = 'block';
+  showToast('Phase2実装後に実際の送信が可能になります');
+}
+
+// ── STATS ──
+function renderStats() {
+  // 業種別
+  const jobCount = {};
+  allUsers.forEach(u => {
+    (Array.isArray(u.jobTypes) ? u.jobTypes : []).forEach(j => {
+      jobCount[j] = (jobCount[j] || 0) + 1;
+    });
+  });
+  renderBarChart('statsJobTypes', jobCount, allUsers.length || 1);
+
+  // 経験別
+  const expCount = {};
+  allUsers.forEach(u => {
+    const e = u.exp ? (u.exp.includes('経験あり') ? '経験あり' : '未経験') : '未記入';
+    expCount[e] = (expCount[e] || 0) + 1;
+  });
+  renderBarChart('statsExp', expCount, allUsers.length || 1);
+
+  // 時給別
+  const wageCount = { '〜¥2,499': 0, '¥2,500〜¥2,999': 0, '¥3,000〜¥3,999': 0, '¥4,000〜': 0 };
+  allUsers.forEach(u => {
+    const w = u.minWage || 0;
+    if (w < 2500)      wageCount['〜¥2,499']++;
+    else if (w < 3000) wageCount['¥2,500〜¥2,999']++;
+    else if (w < 4000) wageCount['¥3,000〜¥3,999']++;
+    else if (w >= 4000) wageCount['¥4,000〜']++;
+  });
+  renderBarChart('statsWage', wageCount, allUsers.length || 1);
+
+  // 送迎別
+  const sendCount = {};
+  allUsers.forEach(u => {
+    const s = u.send || '未記入';
+    sendCount[s] = (sendCount[s] || 0) + 1;
+  });
+  renderBarChart('statsSend', sendCount, allUsers.length || 1);
+}
+
+function renderBarChart(elId, data, total) {
+  const el = document.getElementById(elId);
+  const entries = Object.entries(data).sort((a,b) => b[1]-a[1]);
+  if (!entries.length) { el.innerHTML = '<p style="font-size:13px;color:var(--text-3);">データなし</p>'; return; }
+  el.innerHTML = entries.map(([label, count]) => {
+    const pct = Math.round(count / total * 100);
+    return `<div class="bar-row">
+      <div class="bar-label">${esc(label)}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${pct}%">
+          <span class="bar-val">${count}名</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── HELPERS ──
+function calcAge(birth) {
+  if (!birth || !birth.year) return null;
+  const today = new Date();
+  const b     = new Date(birth.year, (birth.month||1)-1, birth.day||1);
+  let age     = today.getFullYear() - b.getFullYear();
+  if (today < new Date(today.getFullYear(), b.getMonth(), b.getDate())) age--;
+  return age;
+}
+
+function formatDate(ts) {
+  if (!ts) return '—';
+  try {
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');
+  } catch { return '—'; }
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
