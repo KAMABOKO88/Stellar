@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stellar Admin</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        brand: { DEFAULT: '#6d28d9', light: '#ede9fe', dark: '#4c1d95' },
+        surface: '#f8f7fc',
+      },
+      fontFamily: { sans: ['Inter', 'Hiragino Sans', 'sans-serif'] }
+    }
+  }
+}
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<style>
+  :root { color-scheme: light; }
+  body { font-family: 'Inter', 'Hiragino Sans', sans-serif; background: #f8f7fc; color: #1f2937; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #f1f1f1; }
+  ::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 3px; }
+  .table-wrap { overflow-x: auto; }
+  .fade-in { animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .status-badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 100px; }
+  .status-new      { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+  .status-contact  { background: #fefce8; color: #ca8a04; border: 1px solid #fde68a; }
+  .status-entered  { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+  .scout-pending   { background: #fefce8; color: #ca8a04; border: 1px solid #fde68a; }
+  .scout-accepted  { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+  .scout-declined  { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+  select.status-select {
+    font-size: 12px; padding: 3px 8px;
+    border-radius: 6px; border: 1px solid #e5e7eb;
+    background: white; cursor: pointer; outline: none;
+  }
+  select.status-select:focus { border-color: #8b5cf6; box-shadow: 0 0 0 2px rgba(139,92,246,0.15); }
+  .tab-btn {
+    padding: 8px 20px; font-size: 13px; font-weight: 500;
+    border-radius: 8px; cursor: pointer; transition: all 0.2s;
+    color: #6b7280; background: transparent;
+  }
+  .tab-btn.active {
+    background: white; color: #6d28d9;
+    box-shadow: 0 1px 6px rgba(109,40,217,0.12);
+  }
+  .tab-btn:hover:not(.active) { color: #6d28d9; }
+  #toast { transition: opacity 0.3s, transform 0.3s; pointer-events: none; }
+</style>
+</head>
+<body class="bg-surface min-h-screen text-gray-800">
+
+<!-- ログイン画面 -->
+<div id="loginScreen" class="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-violet-50 to-purple-100">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-8 fade-in">
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center gap-2 mb-3">
+        <div class="w-8 h-8 bg-brand rounded-lg flex items-center justify-center">
+          <span class="text-white font-bold text-sm">S</span>
+        </div>
+        <span class="font-bold text-xl text-gray-900">Stellar</span>
+        <span class="text-xs bg-violet-100 text-violet-600 px-2 py-0.5 rounded font-medium">Admin</span>
+      </div>
+      <p class="text-sm text-gray-500">管理者ポータル</p>
+    </div>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1.5">メールアドレス</label>
+        <input id="loginEmail" type="email" placeholder="admin@stellar.jp"
+          class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1.5">パスワード</label>
+        <input id="loginPassword" type="password" placeholder="••••••••"
+          class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition"
+          onkeydown="if(event.key==='Enter') doLogin()">
+      </div>
+      <div id="loginError" class="hidden text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2"></div>
+      <button onclick="doLogin()" id="loginBtn"
+        class="w-full bg-brand text-white rounded-lg py-2.5 text-sm font-semibold hover:bg-brand-dark transition active:scale-95">
+        ログイン
+      </button>
+    </div>
+    <p class="text-center text-xs text-gray-400 mt-6">Stellar 管理者専用 — 無断アクセス禁止</p>
+  </div>
+</div>
+
+<!-- ダッシュボード -->
+<div id="dashboard" class="hidden min-h-screen flex flex-col">
+
+  <!-- ヘッダー -->
+  <header class="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-7 h-7 bg-brand rounded-md flex items-center justify-center flex-shrink-0">
+          <span class="text-white font-bold text-xs">S</span>
+        </div>
+        <span class="font-semibold text-gray-800 hidden sm:block">Stellar Admin</span>
+        <span class="text-xs bg-violet-100 text-violet-600 px-2 py-0.5 rounded font-medium">管理者</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="adminEmail" class="text-xs text-gray-400 hidden sm:block"></span>
+        <button onclick="doLogout()"
+          class="text-xs text-gray-500 hover:text-red-500 border border-gray-200 hover:border-red-200 px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          ログアウト
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6">
+
+    <!-- タブ切り替え -->
+    <div class="bg-gray-100 rounded-xl p-1 flex flex-wrap gap-1 mb-6">
+      <button class="tab-btn active" onclick="switchTab('users')" id="tab-users">
+        👤 女の子管理
+      </button>
+      <button class="tab-btn" onclick="switchTab('scouts')" id="tab-scouts">
+        📨 スカウト管理
+      </button>
+      <button class="tab-btn" onclick="switchTab('shops')" id="tab-shops">
+        🏪 店舗管理
+      </button>
+      <button class="tab-btn" onclick="switchTab('billing')" id="tab-billing">
+        💰 売上・請求
+      </button>
+    </div>
+
+    <!-- ══ 女の子管理タブ ══ -->
+    <div id="panel-users">
+      <!-- サマリーカード -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+          <p class="text-xs text-gray-400 mb-1">総登録者</p>
+          <p class="text-2xl font-bold text-gray-800" id="statTotal">—</p>
+          <p class="text-xs text-gray-400 mt-1">名</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+          <p class="text-xs text-gray-400 mb-1">未連絡</p>
+          <p class="text-2xl font-bold text-blue-600" id="statNew">—</p>
+          <p class="text-xs text-gray-400 mt-1">名</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+          <p class="text-xs text-gray-400 mb-1">面接調整中</p>
+          <p class="text-2xl font-bold text-yellow-500" id="statContact">—</p>
+          <p class="text-xs text-gray-400 mt-1">名</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+          <p class="text-xs text-gray-400 mb-1">入店済み</p>
+          <p class="text-2xl font-bold text-green-600" id="statEntered">—</p>
+          <p class="text-xs text-gray-400 mt-1">名</p>
+        </div>
+      </div>
+
+      <!-- フィルターバー -->
+      <div class="bg-white border border-gray-100 rounded-xl shadow-sm px-4 py-3 mb-4 flex flex-wrap gap-3 items-center">
+        <div class="relative flex-1 min-w-[160px]">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
+          </svg>
+          <input id="filterSearch" type="text" placeholder="ニックネームで検索"
+            class="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition"
+            oninput="applyFilters()">
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-gray-500 whitespace-nowrap">最低時給</label>
+          <select id="filterWage" onchange="applyFilters()"
+            class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-violet-400 bg-white">
+            <option value="">すべて</option>
+            <option value="2000">¥2,000〜</option>
+            <option value="2500">¥2,500〜</option>
+            <option value="3000">¥3,000〜</option>
+            <option value="3500">¥3,500〜</option>
+            <option value="4000">¥4,000〜</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-gray-500 whitespace-nowrap">ステータス</label>
+          <select id="filterStatus" onchange="applyFilters()"
+            class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-violet-400 bg-white">
+            <option value="">すべて</option>
+            <option value="new">未連絡</option>
+            <option value="contact">面接調整中</option>
+            <option value="entered">入店済み</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-gray-500 whitespace-nowrap">経験</label>
+          <select id="filterExp" onchange="applyFilters()"
+            class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-violet-400 bg-white">
+            <option value="">すべて</option>
+            <option value="未経験">未経験</option>
+            <option value="経験あり（1年未満）">経験あり（1年未満）</option>
+            <option value="経験あり（1年以上）">経験あり（1年以上）</option>
+          </select>
+        </div>
+        <button onclick="resetFilters()" class="text-xs text-gray-400 hover:text-gray-600 underline whitespace-nowrap">リセット</button>
+        <span id="filterCount" class="ml-auto text-xs text-gray-400 whitespace-nowrap"></span>
+      </div>
+
+      <div id="loadingState" class="text-center py-20">
+        <div class="inline-block w-8 h-8 border-2 border-violet-200 border-t-brand rounded-full animate-spin mb-3"></div>
+        <p class="text-sm text-gray-400">データを読み込み中...</p>
+      </div>
+      <div id="errorState" class="hidden text-center py-20">
+        <p class="text-sm text-red-400">データの読み込みに失敗しました。</p>
+        <button onclick="loadUsers()" class="mt-3 text-xs text-brand underline">再試行</button>
+      </div>
+      <div id="emptyState" class="hidden text-center py-20">
+        <p class="text-sm text-gray-400">登録者がいません。</p>
+      </div>
+
+      <!-- テーブル（デスクトップ） -->
+      <div id="tableView" class="hidden fade-in">
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm table-wrap">
+          <table class="w-full text-sm min-w-[900px]">
+            <thead>
+              <tr class="border-b border-gray-100">
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">#</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">ニックネーム</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">年齢</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">最低時給</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">出勤</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">送り</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">経験</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">ブロック店舗</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">登録日</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">ステータス</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- カード（モバイル） -->
+      <div id="cardView" class="hidden fade-in space-y-3"></div>
+    </div>
+
+    <!-- ══ スカウト管理タブ ══ -->
+    <div id="panel-scouts" class="hidden">
+
+      <!-- スカウトサマリーカード -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+          <p class="text-xs text-gray-400 mb-1">総スカウト数</p>
+          <p class="text-2xl font-bold text-gray-800" id="scoutTotal">—</p>
+          <p class="text-xs text-gray-400 mt-1">件</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+          <p class="text-xs text-gray-400 mb-1">今月送信</p>
+          <p class="text-2xl font-bold text-violet-600" id="scoutThisMonth">—</p>
+          <p class="text-xs text-gray-400 mt-1">件</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+          <p class="text-xs text-gray-400 mb-1">承諾率</p>
+          <p class="text-2xl font-bold text-green-600" id="scoutAcceptRate">—</p>
+          <p class="text-xs text-gray-400 mt-1">%</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+          <p class="text-xs text-gray-400 mb-1">辞退率</p>
+          <p class="text-2xl font-bold text-red-500" id="scoutDeclineRate">—</p>
+          <p class="text-xs text-gray-400 mt-1">%</p>
+        </div>
+      </div>
+
+      <!-- 店舗別集計 -->
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm mb-6 overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+          <h3 class="text-sm font-semibold text-gray-700">店舗別集計（今月）</h3>
+          <span class="text-xs text-gray-400">上限30通/月</span>
+        </div>
+        <div class="table-wrap">
+          <table class="w-full text-sm min-w-[500px]">
+            <thead>
+              <tr class="border-b border-gray-100">
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">店舗名</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">今月送信</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">承諾数</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">辞退数</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">保留中</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">残り枠</th>
+              </tr>
+            </thead>
+            <tbody id="shopSummaryBody">
+              <tr><td colspan="6" class="text-center py-8 text-sm text-gray-400">読み込み中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- スカウト一覧フィルター -->
+      <div class="bg-white border border-gray-100 rounded-xl shadow-sm px-4 py-3 mb-4 flex flex-wrap gap-3 items-center">
+        <div class="relative flex-1 min-w-[160px]">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
+          </svg>
+          <input id="scoutFilterSearch" type="text" placeholder="店舗名 / ニックネームで検索"
+            class="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition"
+            oninput="applyScoutFilters()">
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-gray-500 whitespace-nowrap">ステータス</label>
+          <select id="scoutFilterStatus" onchange="applyScoutFilters()"
+            class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-violet-400 bg-white">
+            <option value="">すべて</option>
+            <option value="pending">保留中</option>
+            <option value="accepted">承諾</option>
+            <option value="declined">辞退</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-gray-500 whitespace-nowrap">送信月</label>
+          <select id="scoutFilterMonth" onchange="applyScoutFilters()"
+            class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-violet-400 bg-white">
+            <option value="">すべて</option>
+          </select>
+        </div>
+        <button onclick="resetScoutFilters()" class="text-xs text-gray-400 hover:text-gray-600 underline whitespace-nowrap">リセット</button>
+        <span id="scoutFilterCount" class="ml-auto text-xs text-gray-400 whitespace-nowrap"></span>
+      </div>
+
+      <!-- スカウト一覧 -->
+      <div id="scoutLoadingState" class="text-center py-20">
+        <div class="inline-block w-8 h-8 border-2 border-violet-200 border-t-brand rounded-full animate-spin mb-3"></div>
+        <p class="text-sm text-gray-400">スカウトデータを読み込み中...</p>
+      </div>
+      <div id="scoutEmptyState" class="hidden text-center py-20">
+        <p class="text-sm text-gray-400">スカウトデータがありません。</p>
+      </div>
+
+      <div id="scoutTableView" class="hidden fade-in">
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm table-wrap">
+          <table class="w-full text-sm min-w-[900px]">
+            <thead>
+              <tr class="border-b border-gray-100">
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">#</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">店舗名</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">送り先</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">提示時給</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">送り</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">メッセージ</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">送信日時</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">ステータス</th>
+              </tr>
+            </thead>
+            <tbody id="scoutTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /panel-scouts -->
+
+    <!-- ══ 店舗管理タブ ══ -->
+    <div id="panel-shops" class="hidden">
+
+      <!-- サマリーカード -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+          <p class="text-xs text-gray-400 mb-1">登録店舗数</p>
+          <p class="text-2xl font-bold text-gray-800" id="shopStatTotal">—</p>
+          <p class="text-xs text-gray-400 mt-1">店</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+          <p class="text-xs text-gray-400 mb-1">有料契約中</p>
+          <p class="text-2xl font-bold text-violet-600" id="shopStatPaid">—</p>
+          <p class="text-xs text-gray-400 mt-1">店</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+          <p class="text-xs text-gray-400 mb-1">城SHIRO特典</p>
+          <p class="text-2xl font-bold text-amber-500" id="shopStatShiro">—</p>
+          <p class="text-xs text-gray-400 mt-1">店</p>
+        </div>
+      </div>
+
+      <!-- 店舗一覧 -->
+      <div id="shopLoadingState" class="text-center py-20">
+        <div class="inline-block w-8 h-8 border-2 border-violet-200 border-t-brand rounded-full animate-spin mb-3"></div>
+        <p class="text-sm text-gray-400">店舗データを読み込み中...</p>
+      </div>
+      <div id="shopEmptyState" class="hidden text-center py-20">
+        <p class="text-sm text-gray-400">登録店舗がありません。</p>
+      </div>
+
+      <div id="shopTableView" class="hidden fade-in">
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm table-wrap">
+          <table class="w-full text-sm min-w-[700px]">
+            <thead>
+              <tr class="border-b border-gray-100">
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">#</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">店舗名</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">メール</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">プラン</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">契約開始</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">次回請求</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">メモ</th>
+              </tr>
+            </thead>
+            <tbody id="shopTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /panel-shops -->
+
+    <!-- ══ 売上・請求タブ ══ -->
+    <div id="panel-billing" class="hidden">
+
+      <!-- 今月サマリー -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+          <p class="text-xs text-gray-400 mb-1">今月売上（確定）</p>
+          <p class="text-2xl font-bold text-violet-600" id="billRevenue">—</p>
+          <p class="text-xs text-gray-400 mt-1">円</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+          <p class="text-xs text-gray-400 mb-1">請求済み店舗</p>
+          <p class="text-2xl font-bold text-gray-800" id="billBilledCount">—</p>
+          <p class="text-xs text-gray-400 mt-1">店</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+          <p class="text-xs text-gray-400 mb-1">未請求店舗</p>
+          <p class="text-2xl font-bold text-red-500" id="billUnbilledCount">—</p>
+          <p class="text-xs text-gray-400 mt-1">店</p>
+        </div>
+      </div>
+
+      <!-- 月次売上グラフ（シンプルテーブル） -->
+      <div class="bg-white rounded-xl border border-gray-100 shadow-sm mb-6 overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+          <h3 class="text-sm font-semibold text-gray-700">請求管理（有料店舗）</h3>
+          <span class="text-xs text-gray-400">¥30,000/月</span>
+        </div>
+        <div id="billLoadingState" class="text-center py-10">
+          <div class="inline-block w-6 h-6 border-2 border-violet-200 border-t-brand rounded-full animate-spin mb-2"></div>
+          <p class="text-sm text-gray-400">読み込み中...</p>
+        </div>
+        <div id="billTableWrap" class="hidden table-wrap">
+          <table class="w-full text-sm min-w-[600px]">
+            <thead>
+              <tr class="border-b border-gray-100">
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">店舗名</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">プラン</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">月額</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">請求状況</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">次回請求日</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">操作</th>
+              </tr>
+            </thead>
+            <tbody id="billTableBody"></tbody>
+          </table>
+        </div>
+        <div id="billEmptyState" class="hidden text-center py-10 text-sm text-gray-400">有料契約店舗がありません</div>
+      </div>
+
+    </div><!-- /panel-billing -->
+
+  </main>
+</div>
+
+<!-- トースト -->
+<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-4 py-2.5 rounded-lg shadow-lg opacity-0 translate-y-2 z-50">
+  保存しました
+</div>
+
+<!-- 詳細モーダル（女の子） -->
+<div id="modal" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4" onclick="closeModal(event)">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <h3 class="font-semibold text-gray-800">ユーザー詳細</h3>
+      <button onclick="document.getElementById('modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+    </div>
+    <div id="modalContent" class="px-6 py-4 space-y-3"></div>
+  <div class="px-6 pb-5">
+    <p class="text-xs font-medium text-gray-500 mb-2">📝 管理メモ（店舗には非公開）</p>
+    <textarea id="modalMemo" rows="3" placeholder="連絡状況・面接日時・特記事項など..."
+      class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 resize-none transition"></textarea>
+    <button onclick="saveMemo()" id="memoSaveBtn"
+      class="mt-2 text-xs bg-violet-600 hover:bg-violet-700 text-white px-4 py-1.5 rounded-lg transition active:scale-95">
+      メモを保存
+    </button>
+    <span id="memoSaveStatus" class="ml-3 text-xs text-gray-400 hidden"></span>
+  </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════
+// Firebase Config
+// ══════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyAZmmtI-BCneCuO6urLjBbh-5tph0KxcTM",
+  authDomain: "stellar-takamatsu.firebaseapp.com",
+  projectId: "stellar-takamatsu",
+  storageBucket: "stellar-takamatsu.firebasestorage.app",
+  messagingSenderId: "664201750972",
+  appId: "1:664201750972:web:f16e2d5c8fc3f8256e23b9"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+// ══════════════════════════════════
+// STATE
+// ══════════════════════════════════
+let allUsers    = [];
+let filteredUsers = [];
+let statusCache = {};
+
+let allScouts    = [];
+let filteredScouts = [];
+
+let allShops = [];
+let currentModalUserId = null;
+
+// ══════════════════════════════════
+// AUTH
+// ══════════════════════════════════
+auth.onAuthStateChanged(user => {
+  if (user) {
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+    document.getElementById('adminEmail').textContent = user.email;
+    loadUsers();
+    loadScouts();
+    loadShops();
+  } else {
+    document.getElementById('loginScreen').classList.remove('hidden');
+    document.getElementById('dashboard').classList.add('hidden');
+  }
+});
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  const btn   = document.getElementById('loginBtn');
+  errEl.classList.add('hidden');
+  btn.textContent = 'ログイン中...';
+  btn.disabled = true;
+  try {
+    await auth.signInWithEmailAndPassword(email, pass);
+  } catch (e) {
+    errEl.textContent = 'メールアドレスまたはパスワードが正しくありません。';
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.textContent = 'ログイン';
+    btn.disabled = false;
+  }
+}
+
+async function doLogout() {
+  if (!confirm('ログアウトしますか？')) return;
+  await auth.signOut();
+}
+
+// ══════════════════════════════════
+// TAB SWITCH
+// ══════════════════════════════════
+function switchTab(tab) {
+  ['users', 'scouts', 'shops', 'billing'].forEach(t => {
+    document.getElementById('panel-' + t).classList.toggle('hidden', t !== tab);
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+  });
+}
+
+// ══════════════════════════════════
+// ユーザーデータ読み込み
+// ══════════════════════════════════
+async function loadUsers() {
+  show('loadingState');
+  hide('tableView'); hide('cardView'); hide('emptyState'); hide('errorState');
+  try {
+    const snap = await db.collection('users').orderBy('registeredAt', 'desc').get();
+    allUsers = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    allUsers.forEach(u => { statusCache[u.id] = u.adminStatus || 'new'; });
+    hide('loadingState');
+    applyFilters();
+    updateStats();
+  } catch (e) {
+    console.error(e);
+    hide('loadingState');
+    show('errorState');
+  }
+}
+
+function applyFilters() {
+  const q      = document.getElementById('filterSearch').value.trim().toLowerCase();
+  const wage   = parseInt(document.getElementById('filterWage').value) || 0;
+  const status = document.getElementById('filterStatus').value;
+  const exp    = document.getElementById('filterExp').value;
+  filteredUsers = allUsers.filter(u => {
+    if (q && !(u.nickname || '').toLowerCase().includes(q)) return false;
+    if (wage && (u.minWage || 0) < wage) return false;
+    if (status && (statusCache[u.id] || 'new') !== status) return false;
+    if (exp && u.exp !== exp) return false;
+    return true;
+  });
+  document.getElementById('filterCount').textContent = `${filteredUsers.length} 件`;
+  renderTable();
+  renderCards();
+}
+
+function resetFilters() {
+  ['filterSearch','filterWage','filterStatus','filterExp'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  applyFilters();
+}
+
+function updateStats() {
+  document.getElementById('statTotal').textContent   = allUsers.length;
+  document.getElementById('statNew').textContent     = allUsers.filter(u => (statusCache[u.id]||'new') === 'new').length;
+  document.getElementById('statContact').textContent = allUsers.filter(u => statusCache[u.id] === 'contact').length;
+  document.getElementById('statEntered').textContent = allUsers.filter(u => statusCache[u.id] === 'entered').length;
+}
+
+function renderTable() {
+  if (filteredUsers.length === 0 && allUsers.length > 0) { hide('tableView'); hide('cardView'); show('emptyState'); return; }
+  if (filteredUsers.length === 0) return;
+  hide('emptyState');
+  if (window.innerWidth >= 768) { show('tableView'); hide('cardView'); }
+  else { hide('tableView'); show('cardView'); }
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = filteredUsers.map((u, i) => {
+    const age = calcAge(u.birth);
+    const regDate = formatDate(u.registeredAt);
+    const blocked = (u.blockedShopNames || []).join('、') || '—';
+    const status = statusCache[u.id] || 'new';
+    return `
+    <tr class="border-b border-gray-50 hover:bg-violet-50/40 transition cursor-pointer" onclick="openModal('${u.id}')">
+      <td class="px-4 py-3 text-gray-400 text-xs">${i + 1}</td>
+      <td class="px-4 py-3"><div class="font-medium text-gray-800">${esc(u.nickname || '—')}</div><div class="text-xs text-gray-400">${u.lineDisplayName || ''}</div></td>
+      <td class="px-4 py-3 text-gray-600">${age !== null ? age + '歳' : '—'}</td>
+      <td class="px-4 py-3 font-medium text-gray-800">${u.minWage ? '¥' + u.minWage.toLocaleString() + '〜' : '—'}</td>
+      <td class="px-4 py-3 text-gray-600 text-xs">${esc(u.workDays || '—')}</td>
+      <td class="px-4 py-3 text-gray-600 text-xs">${esc(u.send || '—')}</td>
+      <td class="px-4 py-3 text-gray-600 text-xs">${esc(u.exp || '—')}</td>
+      <td class="px-4 py-3 text-gray-500 text-xs max-w-[140px] truncate" title="${esc(blocked)}">${esc(blocked)}</td>
+      <td class="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">${regDate}</td>
+      <td class="px-4 py-3" onclick="event.stopPropagation()">${userStatusSelect(u.id, status)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderCards() {
+  if (window.innerWidth >= 768) return;
+  const container = document.getElementById('cardView');
+  container.innerHTML = filteredUsers.map(u => {
+    const age = calcAge(u.birth);
+    const status = statusCache[u.id] || 'new';
+    const statusLabel = { new: '未連絡', contact: '面接調整中', entered: '入店済み' }[status];
+    const statusCls   = { new: 'status-new', contact: 'status-contact', entered: 'status-entered' }[status];
+    const blocked = (u.blockedShopNames || []).join('、') || '—';
+    return `
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 cursor-pointer" onclick="openModal('${u.id}')">
+      <div class="flex items-start justify-between mb-3">
+        <div><div class="font-semibold text-gray-800">${esc(u.nickname || '—')}</div><div class="text-xs text-gray-400">${age !== null ? age + '歳' : '年齢不明'}</div></div>
+        <span class="status-badge ${statusCls}">${statusLabel}</span>
+      </div>
+      <div onclick="event.stopPropagation()" class="flex items-center gap-2 mt-2">
+        <span class="text-xs text-gray-400">ステータス変更:</span>${userStatusSelect(u.id, status)}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function userStatusSelect(userId, current) {
+  const opts = [{ val: 'new', label: '未連絡' }, { val: 'contact', label: '面接調整中' }, { val: 'entered', label: '入店済み' }];
+  return `<select class="status-select" onchange="updateUserStatus('${userId}', this.value)">
+    ${opts.map(o => `<option value="${o.val}" ${current===o.val?'selected':''}>${o.label}</option>`).join('')}
+  </select>`;
+}
+
+async function updateUserStatus(userId, newStatus) {
+  statusCache[userId] = newStatus;
+  updateStats();
+  try {
+    await db.collection('users').doc(userId).update({
+      adminStatus: newStatus,
+      adminStatusUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast('ステータスを保存しました');
+  } catch (e) {
+    showToast('⚠️ 保存に失敗しました');
+  }
+}
+
+// ══════════════════════════════════
+// スカウトデータ読み込み
+// ══════════════════════════════════
+async function loadScouts() {
+  try {
+    const snap = await db.collection('scouts').orderBy('sentAt', 'desc').get();
+    allScouts = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    buildMonthFilter();
+    applyScoutFilters();
+    renderShopSummary();
+    updateScoutStats();
+    hide('scoutLoadingState');
+  } catch (e) {
+    console.error('スカウト読み込みエラー:', e);
+    hide('scoutLoadingState');
+    document.getElementById('scoutLoadingState').innerHTML = '<p class="text-sm text-red-400">スカウトデータの読み込みに失敗しました。</p>';
+  }
+}
+
+function buildMonthFilter() {
+  const months = new Set();
+  allScouts.forEach(s => {
+    if (s.sentAt) {
+      const d = s.sentAt.toDate ? s.sentAt.toDate() : new Date(s.sentAt);
+      months.add(d.getFullYear() + '/' + String(d.getMonth()+1).padStart(2,'0'));
+    }
+  });
+  const sel = document.getElementById('scoutFilterMonth');
+  [...months].sort().reverse().forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m; opt.textContent = m;
+    sel.appendChild(opt);
+  });
+}
+
+function applyScoutFilters() {
+  const q      = document.getElementById('scoutFilterSearch').value.trim().toLowerCase();
+  const status = document.getElementById('scoutFilterStatus').value;
+  const month  = document.getElementById('scoutFilterMonth').value;
+
+  filteredScouts = allScouts.filter(s => {
+    if (q && !(s.shopName||'').toLowerCase().includes(q) && !(s.targetNickname||'').toLowerCase().includes(q)) return false;
+    if (status && s.status !== status) return false;
+    if (month) {
+      if (!s.sentAt) return false;
+      const d = s.sentAt.toDate ? s.sentAt.toDate() : new Date(s.sentAt);
+      const m = d.getFullYear() + '/' + String(d.getMonth()+1).padStart(2,'0');
+      if (m !== month) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('scoutFilterCount').textContent = `${filteredScouts.length} 件`;
+  renderScoutTable();
+}
+
+function resetScoutFilters() {
+  ['scoutFilterSearch','scoutFilterStatus','scoutFilterMonth'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  applyScoutFilters();
+}
+
+function updateScoutStats() {
+  const total = allScouts.length;
+  const now = new Date();
+  const thisMonth = allScouts.filter(s => {
+    if (!s.sentAt) return false;
+    const d = s.sentAt.toDate ? s.sentAt.toDate() : new Date(s.sentAt);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).length;
+  const accepted = allScouts.filter(s => s.status === 'accepted').length;
+  const declined = allScouts.filter(s => s.status === 'declined').length;
+  const resolved = accepted + declined;
+
+  document.getElementById('scoutTotal').textContent = total;
+  document.getElementById('scoutThisMonth').textContent = thisMonth;
+  document.getElementById('scoutAcceptRate').textContent = resolved > 0 ? Math.round(accepted/resolved*100) : '—';
+  document.getElementById('scoutDeclineRate').textContent = resolved > 0 ? Math.round(declined/resolved*100) : '—';
+}
+
+function renderShopSummary() {
+  const now = new Date();
+  const shopMap = {};
+
+  allScouts.forEach(s => {
+    if (!s.shopName) return;
+    if (!shopMap[s.shopName]) shopMap[s.shopName] = { total: 0, accepted: 0, declined: 0, pending: 0, thisMonth: 0 };
+    const shop = shopMap[s.shopName];
+    shop.total++;
+    if (s.status === 'accepted') shop.accepted++;
+    else if (s.status === 'declined') shop.declined++;
+    else shop.pending++;
+    if (s.sentAt) {
+      const d = s.sentAt.toDate ? s.sentAt.toDate() : new Date(s.sentAt);
+      if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) shop.thisMonth++;
+    }
+  });
+
+  const LIMIT = 30;
+  const tbody = document.getElementById('shopSummaryBody');
+  const shops = Object.entries(shopMap).sort((a,b) => b[1].thisMonth - a[1].thisMonth);
+
+  if (shops.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-sm text-gray-400">データなし</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = shops.map(([name, d]) => {
+    const remaining = LIMIT - d.thisMonth;
+    const remainCls = remaining <= 5 ? 'text-red-500 font-bold' : remaining <= 10 ? 'text-yellow-500 font-semibold' : 'text-green-600';
+    return `<tr class="border-b border-gray-50 hover:bg-gray-50/50">
+      <td class="px-4 py-3 font-medium text-gray-800">${esc(name)}</td>
+      <td class="px-4 py-3 text-gray-700 font-semibold">${d.thisMonth}件</td>
+      <td class="px-4 py-3 text-green-600 font-medium">${d.accepted}件</td>
+      <td class="px-4 py-3 text-red-500">${d.declined}件</td>
+      <td class="px-4 py-3 text-yellow-600">${d.pending}件</td>
+      <td class="px-4 py-3 ${remainCls}">${remaining}枠</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderScoutTable() {
+  if (filteredScouts.length === 0) { hide('scoutTableView'); show('scoutEmptyState'); return; }
+  hide('scoutEmptyState'); show('scoutTableView');
+
+  const tbody = document.getElementById('scoutTableBody');
+  tbody.innerHTML = filteredScouts.map((s, i) => {
+    const sentDate = formatDate(s.sentAt);
+    const statusInfo = {
+      pending:  { cls: 'scout-pending',  label: '保留中' },
+      accepted: { cls: 'scout-accepted', label: '承諾' },
+      declined: { cls: 'scout-declined', label: '辞退' },
+    };
+    const si = statusInfo[s.status] || statusInfo['pending'];
+    const msg = (s.message || '').length > 20 ? esc(s.message.slice(0,20)) + '…' : esc(s.message || '—');
+
+    return `<tr class="border-b border-gray-50 hover:bg-violet-50/30 transition">
+      <td class="px-4 py-3 text-gray-400 text-xs">${i + 1}</td>
+      <td class="px-4 py-3"><div class="font-medium text-gray-800">${esc(s.shopName || '—')}</div><div class="text-xs text-gray-400">${esc(s.shopEmail || '')}</div></td>
+      <td class="px-4 py-3 font-medium text-gray-700">${esc(s.targetNickname || '—')}</td>
+      <td class="px-4 py-3 font-semibold text-gray-800">${s.offerHourly ? '¥'+s.offerHourly.toLocaleString() : '—'}</td>
+      <td class="px-4 py-3 text-gray-600 text-xs">${esc(s.transport || '—')}</td>
+      <td class="px-4 py-3 text-gray-500 text-xs max-w-[120px]" title="${esc(s.message||'')}">${msg}</td>
+      <td class="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">${sentDate}</td>
+      <td class="px-4 py-3">${scoutStatusSelect(s.id, s.status || 'pending')}</td>
+    </tr>`;
+  }).join('');
+}
+
+function scoutStatusSelect(scoutId, current) {
+  const opts = [
+    { val: 'pending',  label: '保留中' },
+    { val: 'accepted', label: '承諾' },
+    { val: 'declined', label: '辞退' },
+  ];
+  return `<select class="status-select" onchange="updateScoutStatus('${scoutId}', this.value)">
+    ${opts.map(o => `<option value="${o.val}" ${current===o.val?'selected':''}>${o.label}</option>`).join('')}
+  </select>`;
+}
+
+async function updateScoutStatus(scoutId, newStatus) {
+  // ローカル更新
+  const scout = allScouts.find(s => s.id === scoutId);
+  if (scout) scout.status = newStatus;
+  updateScoutStats();
+  renderShopSummary();
+
+  try {
+    await db.collection('scouts').doc(scoutId).update({
+      status: newStatus,
+      adminUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast('ステータスを更新しました');
+  } catch (e) {
+    console.error(e);
+    showToast('⚠️ 保存に失敗しました');
+  }
+}
+
+// ══════════════════════════════════
+// 詳細モーダル（女の子）
+// ══════════════════════════════════
+function openModal(userId) {
+  const u = allUsers.find(x => x.id === userId);
+  if (!u) return;
+  currentModalUserId = userId;
+  const age = calcAge(u.birth);
+  const regDate = formatDate(u.registeredAt);
+  const blocked = (u.blockedShopNames || []);
+  const aura = (u.aura || []).join('、') || '—';
+  const jobTypes = (u.jobTypes || []).join('、') || '—';
+  const row = (label, value) => `
+    <div class="flex gap-3 py-2 border-b border-gray-50 last:border-0">
+      <span class="text-xs text-gray-400 w-28 flex-shrink-0 pt-0.5">${label}</span>
+      <span class="text-sm text-gray-700 font-medium">${value}</span>
+    </div>`;
+  document.getElementById('modalContent').innerHTML = `
+    ${row('LINE表示名', esc(u.lineDisplayName || '—'))}
+    ${row('ニックネーム', esc(u.nickname || '—'))}
+    ${row('年齢', age !== null ? age + '歳' : '—')}
+    ${row('身長', u.height ? u.height + 'cm' : '—')}
+    ${row('体型', esc(u.bodyType || '—'))}
+    ${row('雰囲気', aura)}
+    ${row('夜職経験', esc(u.exp || '—'))}
+    ${row('最低希望時給', u.minWage ? '¥' + u.minWage.toLocaleString() + '〜' : '—')}
+    ${row('出勤日数', esc(u.workDays || '—'))}
+    ${row('送り', esc(u.send || '—'))}
+    ${row('希望業態', jobTypes)}
+    ${row('ブロック店舗', blocked.length ? blocked.map(b=>`<span class="bg-red-50 text-red-400 text-xs px-2 py-0.5 rounded mr-1">${esc(b)}</span>`).join('') : '—')}
+    ${row('登録日', regDate)}
+    <div class="pt-3">
+      <p class="text-xs text-gray-400 mb-2">LINE ID（内部管理用）</p>
+      <code class="text-xs bg-gray-50 border border-gray-100 rounded px-3 py-2 block text-gray-500 break-all">${esc(u.lineUserId || u.id)}</code>
+    </div>`;
+  document.getElementById('modal').classList.remove('hidden');
+  // メモを読み込み
+  document.getElementById('modalMemo').value = u.adminMemo || '';
+  document.getElementById('memoSaveStatus').classList.add('hidden');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modal')) {
+    document.getElementById('modal').classList.add('hidden');
+  }
+}
+
+// ══════════════════════════════════
+// HELPERS
+// ══════════════════════════════════
+function calcAge(birth) {
+  if (!birth || !birth.year) return null;
+  const today = new Date();
+  const bDate = new Date(birth.year, (birth.month||1)-1, birth.day||1);
+  let age = today.getFullYear() - bDate.getFullYear();
+  if (today < new Date(today.getFullYear(), bDate.getMonth(), bDate.getDate())) age--;
+  return age;
+}
+
+function formatDate(ts) {
+  if (!ts) return '—';
+  try {
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.getFullYear() + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + String(d.getDate()).padStart(2,'0');
+  } catch { return '—'; }
+}
+
+function esc(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function show(id) { document.getElementById(id).classList.remove('hidden'); }
+function hide(id) { document.getElementById(id).classList.add('hidden'); }
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.opacity = '1';
+  t.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(-50%) translateY(8px)';
+  }, 2500);
+}
+
+window.addEventListener('resize', () => {
+  if (filteredUsers.length === 0) return;
+  if (window.innerWidth >= 768) { show('tableView'); hide('cardView'); }
+  else { hide('tableView'); show('cardView'); renderCards(); }
+});
+
+// ══════════════════════════════════
+// メモ保存
+// ══════════════════════════════════
+async function saveMemo() {
+  if (!currentModalUserId) return;
+  const memo = document.getElementById('modalMemo').value.trim();
+  const btn  = document.getElementById('memoSaveBtn');
+  const status = document.getElementById('memoSaveStatus');
+  btn.disabled = true;
+  btn.textContent = '保存中...';
+  try {
+    await db.collection('users').doc(currentModalUserId).update({
+      adminMemo: memo,
+      adminMemoUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    // ローカルも更新
+    const u = allUsers.find(x => x.id === currentModalUserId);
+    if (u) u.adminMemo = memo;
+    status.textContent = '✓ 保存しました';
+    status.classList.remove('hidden', 'text-red-400');
+    status.classList.add('text-green-600');
+    showToast('メモを保存しました');
+  } catch (e) {
+    status.textContent = '保存に失敗しました';
+    status.classList.remove('hidden', 'text-green-600');
+    status.classList.add('text-red-400');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'メモを保存';
+  }
+}
+
+// ══════════════════════════════════
+// 店舗データ
+// ══════════════════════════════════
+async function loadShops() {
+  try {
+    const snap = await db.collection('shops').orderBy('createdAt', 'desc').get();
+    allShops = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    hide('shopLoadingState');
+    renderShops();
+    renderBillingTable();
+  } catch (e) {
+    console.error('店舗読み込みエラー:', e);
+    hide('shopLoadingState');
+    document.getElementById('shopLoadingState').innerHTML = '<p class="text-sm text-red-400 py-10 text-center">店舗データの読み込みに失敗しました。</p>';
+  }
+}
+
+const PLAN_LABEL = { free: '無料', paid: '有料 ¥30,000', shiro: '城SHIRO（無料）' };
+const PLAN_CLS   = { free: 'status-new', paid: 'scout-accepted', shiro: 'scout-pending' };
+
+function renderShops() {
+  const total  = allShops.length;
+  const paid   = allShops.filter(s => s.plan === 'paid').length;
+  const shiro  = allShops.filter(s => s.plan === 'shiro').length;
+  document.getElementById('shopStatTotal').textContent = total;
+  document.getElementById('shopStatPaid').textContent  = paid;
+  document.getElementById('shopStatShiro').textContent = shiro;
+
+  if (total === 0) { show('shopEmptyState'); return; }
+  hide('shopEmptyState'); show('shopTableView');
+
+  const tbody = document.getElementById('shopTableBody');
+  tbody.innerHTML = allShops.map((s, i) => {
+    const plan  = s.plan || 'free';
+    const label = PLAN_LABEL[plan] || plan;
+    const cls   = PLAN_CLS[plan]   || 'status-new';
+    const start = s.planStartDate  || '—';
+    const next  = s.nextBillingDate || '—';
+    const memo  = (s.shopMemo || '').length > 20 ? esc(s.shopMemo.slice(0,20)) + '…' : esc(s.shopMemo || '—');
+    return `<tr class="border-b border-gray-50 hover:bg-violet-50/30 transition">
+      <td class="px-4 py-3 text-gray-400 text-xs">${i+1}</td>
+      <td class="px-4 py-3 font-medium text-gray-800">${esc(s.name || s.shopName || '—')}</td>
+      <td class="px-4 py-3 text-gray-500 text-xs">${esc(s.email || '—')}</td>
+      <td class="px-4 py-3">
+        <select class="status-select" onchange="updateShopPlan('${s.id}', this.value)">
+          <option value="free"  ${plan==='free' ?'selected':''}>無料</option>
+          <option value="paid"  ${plan==='paid' ?'selected':''}>有料 ¥30,000</option>
+          <option value="shiro" ${plan==='shiro'?'selected':''}>城SHIRO（無料）</option>
+        </select>
+      </td>
+      <td class="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">${esc(start)}</td>
+      <td class="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">${esc(next)}</td>
+      <td class="px-4 py-3 text-gray-500 text-xs cursor-pointer hover:text-violet-600" onclick="openShopMemoModal('${s.id}')" title="${esc(s.shopMemo||'')}">${memo}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function updateShopPlan(shopId, newPlan) {
+  const shop = allShops.find(s => s.id === shopId);
+  if (shop) shop.plan = newPlan;
+  renderShops();
+  renderBillingTable();
+  try {
+    await db.collection('shops').doc(shopId).update({
+      plan: newPlan,
+      planUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast('プランを更新しました');
+  } catch (e) {
+    showToast('⚠️ 保存に失敗しました');
+  }
+}
+
+// 店舗メモモーダル（簡易）
+function openShopMemoModal(shopId) {
+  const shop = allShops.find(s => s.id === shopId);
+  if (!shop) return;
+  const memo = prompt('店舗メモを入力（' + esc(shop.name || shop.shopName || shopId) + '）', shop.shopMemo || '');
+  if (memo === null) return;
+  saveShopMemo(shopId, memo);
+}
+
+async function saveShopMemo(shopId, memo) {
+  const shop = allShops.find(s => s.id === shopId);
+  if (shop) shop.shopMemo = memo;
+  renderShops();
+  try {
+    await db.collection('shops').doc(shopId).update({ shopMemo: memo });
+    showToast('メモを保存しました');
+  } catch (e) {
+    showToast('⚠️ メモの保存に失敗しました');
+  }
+}
+
+// ══════════════════════════════════
+// 売上・請求
+// ══════════════════════════════════
+function renderBillingTable() {
+  hide('billLoadingState');
+  const paidShops = allShops.filter(s => s.plan === 'paid' || s.plan === 'shiro');
+  const billable  = allShops.filter(s => s.plan === 'paid');
+  const revenue   = billable.length * 30000;
+  const billed    = billable.filter(s => s.billingStatus === 'billed').length;
+  const unbilled  = billable.length - billed;
+
+  document.getElementById('billRevenue').textContent      = revenue > 0 ? '¥' + revenue.toLocaleString() : '¥0';
+  document.getElementById('billBilledCount').textContent  = billed;
+  document.getElementById('billUnbilledCount').textContent = unbilled;
+
+  if (billable.length === 0) {
+    hide('billTableWrap'); show('billEmptyState'); return;
+  }
+  hide('billEmptyState'); show('billTableWrap');
+
+  const tbody = document.getElementById('billTableBody');
+  tbody.innerHTML = billable.map(s => {
+    const status = s.billingStatus || 'unbilled';
+    const statusLabel = status === 'billed' ? '請求済み' : '未請求';
+    const statusCls   = status === 'billed' ? 'scout-accepted' : 'scout-pending';
+    const next = s.nextBillingDate || '—';
+    return `<tr class="border-b border-gray-50 hover:bg-violet-50/30 transition">
+      <td class="px-4 py-3 font-medium text-gray-800">${esc(s.name || s.shopName || '—')}</td>
+      <td class="px-4 py-3"><span class="status-badge scout-accepted">有料</span></td>
+      <td class="px-4 py-3 font-semibold text-gray-800">¥30,000</td>
+      <td class="px-4 py-3"><span class="status-badge ${statusCls}">${statusLabel}</span></td>
+      <td class="px-4 py-3 text-gray-400 text-xs">${esc(next)}</td>
+      <td class="px-4 py-3">
+        <button onclick="toggleBillingStatus('${s.id}', '${status}')"
+          class="text-xs px-3 py-1 rounded-lg border transition
+            ${status === 'billed' ? 'border-gray-200 text-gray-400 hover:border-red-200 hover:text-red-400' : 'border-violet-200 text-violet-600 hover:bg-violet-50'}">
+          ${status === 'billed' ? '未請求に戻す' : '請求済みにする'}
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function toggleBillingStatus(shopId, currentStatus) {
+  const newStatus = currentStatus === 'billed' ? 'unbilled' : 'billed';
+  const shop = allShops.find(s => s.id === shopId);
+  if (shop) shop.billingStatus = newStatus;
+  renderBillingTable();
+  renderShops();
+  try {
+    await db.collection('shops').doc(shopId).update({
+      billingStatus: newStatus,
+      billingUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast(newStatus === 'billed' ? '請求済みに変更しました' : '未請求に戻しました');
+  } catch (e) {
+    showToast('⚠️ 保存に失敗しました');
+  }
+}
+</script>
+</body>
+</html>
